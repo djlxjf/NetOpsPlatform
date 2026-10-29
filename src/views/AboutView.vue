@@ -9,7 +9,7 @@
         <img class="about-logo" src="/logo_128.png" alt="NetOps" />
         <div class="about-brand-text">
           <div class="about-brand-name">NetOps Platform</div>
-          <span class="about-badge">开源核心 · MIT</span>
+          <span class="about-badge">完全开源 · MIT</span>
         </div>
       </div>
 
@@ -42,7 +42,7 @@
       <!-- 底部说明 -->
       <p class="about-foot">
         你的每一份支持，都会实打实地用在服务器开销、功能迭代与问题修复上，帮这个项目走得更远。
-        如果你需要商业授权、私有化部署或团队级技术支持，也可以了解专业版（Pro）方案。再次感谢你愿意花时间了解 NetOps Platform。
+        本项目基于 MIT 许可证完全开源，全部功能免费使用，无需购买任何授权。也欢迎在仓库 Issue 中提出你的想法和建议。再次感谢你愿意花时间了解 NetOps Platform。
       </p>
     </div>
 

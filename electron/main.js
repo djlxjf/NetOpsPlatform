@@ -324,34 +324,11 @@ app.whenReady().then(async () => {
 
   debugLog('App ready')
 
-  // ====== 授权验证 ======
-  try {
-    const { execFileSync } = require('child_process')
-    const licenseExe = path.join(__dirname, 'LicenseCheck.exe')
-    if (fs.existsSync(licenseExe)) {
-      const result = execFileSync(licenseExe, { encoding: 'utf8', timeout: 3000, stdio: 'pipe' })
-      debugLog('License check: ' + (result || '').trim())
-    } else {
-      debugLog('LicenseCheck.exe not found, skipping check')
-    }
-  } catch (err) {
-    const exitCode = err.status
-    if (exitCode === 1) {
-      // 试用到期，显示激活窗口
-      try {
-        const { execFileSync } = require('child_process')
-        execFileSync(path.join(__dirname, 'LicenseActivate.exe'), { timeout: 300000, stdio: 'inherit' })
-      } catch (e) {
-        debugLog('License activate error: ' + e.message)
-      }
-    } else if (exitCode === 2) {
-      dialog.showErrorBox('安全警告', '检测到调试工具，软件已退出。')
-      app.quit()
-      return
-    }
-    debugLog('License check exit code: ' + exitCode)
-  }
-  // ====== 授权验证结束 ======
+  // ====== 开源模式：不做授权校验 =====
+  // 本项目基于 MIT 许可证完全开源，全部功能免费，无授权码门槛。
+  // 历史版本的闭源授权组件（LicenseCheck.exe / LicenseActivate.exe / LicenseCore.dll）
+  // 已不再被调用，仓库中保留仅作历史参考，不构成使用限制。
+  // ====== 授权校验结束 ======
   
   
   try {
