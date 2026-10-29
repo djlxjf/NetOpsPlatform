@@ -1,0 +1,592 @@
+<!--
+  DataCenter 3D 工具外壳 —— UI 标记的唯一来源（Single Source of Truth）
+
+  消费方：
+    1) 独立运行：src/boot.js 读取本文件（?raw）并注入 #dc-root，再动态 import main.js
+    2) Vue 嵌入：src/views/datacenter/DataCenterView.vue 读取本文件注入 Shadow Root
+
+  设计约定（v2 全新布局）：
+    左侧导航轨 (rail) —— 流程分区，替代旧顶部横向步骤条
+    顶部命令栏 (topbar) —— 品牌 + 全局工具（视角/着色/检索/锁定）
+    右侧检查器 (inspector) —— 选中对象属性 / 门窗布置 / 机柜详情
+    底部状态条 (statusbar) —— 实时指标 + 操作提示
+    浮动工具坞 (dock) —— 随阶段切换的上下文操作
+
+  约定：
+    - #app 为 3D canvas 宿主（SceneManager 挂载点）
+    - 元素 id 与 main.js/ui.js 的选择器一一对应，改版时**禁止改动 id**
+    - Shadow DOM 下 id 不会与宿主应用冲突
+-->
+<div id="app"></div>
+
+<!-- ========== 左侧导航轨：流程分区 ========== -->
+<nav id="stepper" class="rail">
+  <div class="rail-head">工作流</div>
+  <button data-stage="1" class="rail-item active" title="规划基础 · 定级 / 规模 / 负荷锚点">
+    <span class="idx">01</span>
+    <span class="txt">规划基础<em>定级 · 规模 · 锚点</em></span>
+  </button>
+  <button data-stage="2" class="rail-item" title="建筑围护 · 墙体 / 门窗 / 辅助区">
+    <span class="idx">02</span>
+    <span class="txt">建筑围护<em>墙体 · 门窗 · 辅助区</em></span>
+  </button>
+  <button data-stage="3" class="rail-item" title="系统配置 · 五域工程参数">
+    <span class="idx">03</span>
+    <span class="txt">系统配置<em>五域工程参数</em></span>
+  </button>
+  <button data-stage="4" class="rail-item" title="设备布置 · 按业务域摆放">
+    <span class="idx">04</span>
+    <span class="txt">设备布置<em>按业务域摆放</em></span>
+  </button>
+  <button data-stage="5" class="rail-item" title="校验联检 · 容量 / 跨域 / 合规 / 交付">
+    <span class="idx">05</span>
+    <span class="txt">校验联检<em>自检 · 预览 · 交付</em></span>
+  </button>
+  <div class="rail-foot">
+    <span class="rail-foot-tip">摆放完成或按 <kbd>Tab</kbd> 可收起工作流，让出视野</span>
+  </div>
+</nav>
+
+<!-- ========== 顶部命令栏 ========== -->
+<header id="topbar">
+  <button id="rail-toggle" class="rail-toggle" title="收起 / 展开工作流（Tab）">
+    <span class="rt-icon"></span>
+    <span class="rt-label">工作流</span>
+  </button>
+
+  <div class="brand">
+    <span class="logo"></span>
+    <span class="brand-txt">
+      <b>机房规划</b>
+      
+    </span>
+  </div>
+
+  <div class="cmd-group">
+    <span class="cmd-label">视角</span>
+    <div class="seg">
+      <button data-preset="panorama">全景</button>
+      <button data-preset="top">俯视</button>
+      <button data-preset="iso">等距</button>
+      <button data-preset="front">正视</button>
+    </div>
+  </div>
+
+  <div class="cmd-group">
+    <span class="cmd-label">着色</span>
+    <div class="seg">
+      <button data-mode="status" class="active">状态</button>
+      <button data-mode="temperature">温度</button>
+      <button data-mode="density">负载</button>
+      <button data-mode="type">类型</button>
+    </div>
+  </div>
+
+  <div class="cmd-group" id="tb-tour">
+    <span class="cmd-label">游览</span>
+    <div class="seg">
+      <button data-tour="orbit" class="active">环绕</button>
+      <button data-tour="patrol">自动巡检</button>
+    </div>
+  </div>
+
+  <!-- 演示增强分组（纯可视化演示开关，不涉及真实机房规范）：
+       开关型 data-fx 由 main.js _initDemoFx 统一路由；场景叙事 data-scenario 委托 racks.applyScenario -->
+  <div class="cmd-group" id="tb-demo">
+    <span class="cmd-label">演示</span>
+    <div class="seg">
+      <button data-fx="airflow" title="冷/热通道气流可视化（默认关）">气流</button>
+      <button data-fx="heatmap" title="地面温度热力图（默认关）">热力</button>
+      <button data-fx="measure" title="两点测距工具">测距</button>
+      <button data-fx="alerts" title="故障/告警机柜顶部角标">告警</button>
+      <button data-fx="led" title="告警标牌呼吸闪烁">LED</button>
+      <button data-fx="theme" title="暗/亮主题切换">主题</button>
+      <button data-fx="touch" title="启用触屏手势（单指旋转 / 双指缩放）">触屏</button>
+      <button data-fx="help" title="快捷键与操作帮助">帮助</button>
+      <button data-fx="onboard" title="重新查看上手引导">引导</button>
+    </div>
+    <div class="seg" id="demo-scenario">
+      <button data-scenario="normal" class="active" title="正常叙事">正常</button>
+      <button data-scenario="load" title="高负载叙事">高载</button>
+      <button data-scenario="fault" title="故障演练叙事">故障</button>
+    </div>
+  </div>
+
+  <!-- 静电地板铺设（参数面板 #floor-panel 由 floorPanel.js 驱动）：地板砖长/宽、
+       离地高度（架空层深度）、板厚、砖缝、贴面相互独立可调，实时重建；地板顶面
+       恒为 y=0，机柜/设备等既有锚点不动。经 main.js _initDemoFx 的 data-fx
+       开关路由（floor-config）。 -->
+  <div class="cmd-group" id="tb-floor">
+    <span class="cmd-label">地板</span>
+    <div class="seg">
+      <button data-fx="floor-config" title="静电地板铺设参数：地板砖长/宽、离地高度、板厚、砖缝、贴面（实时重建）">参数</button>
+    </div>
+  </div>
+
+  <!-- 桥架系统可视化（设计方案见 docs/机房桥架系统设计与安装工艺方案.md）：
+       弱电桥架 400mm、强电桥架 300mm 均支持「机柜上方 / 静电地板下方」两种铺设
+       位置与「全程互联 / 沿排纵贯 / 横穿布线」三种走向；机柜上方默认同标高
+       Y=3.40m 水平平行敷设，横向各偏 ±0.35m（水平净距 0.35m），并以「主干母线
+       (−X端墙)+馈线+列运行」三级拓扑互联成网；强电主干自配电柜/UPS 引出、馈线
+       逐排 T 接至每台机柜上方；电源缆线落柜顶前走线口、数据缆线落柜顶后走线口；
+       配套桥架含接地干线 Y=4.2m + 消防灭火剂管架 Y=4.5m（横穿机房）。三类一键
+       显隐，默认全隐；路由由布局实时推导，增删/移动机柜后自动重建；全部轴对齐
+       （横平竖直）、逐排对齐规整。显隐经 main.js _initDemoFx 的 data-fx 开关
+       路由；「参数」按钮（bridge-config）打开 #bridge-panel 铺设参数面板。 -->
+  <div class="cmd-group" id="tb-bridge">
+    <span class="cmd-label">桥架</span>
+    <div class="seg">
+      <button data-fx="bridge-weak" title="弱电桥架：400mm 穿孔桥架 · 机柜排正上方 · 安装高度 3.4m · 与强电水平平行（默认关）">弱电</button>
+      <button data-fx="bridge-strong" title="强电桥架：300mm · 机柜排正上方 · 安装高度 3.4m · 主干自配电柜/UPS 引出、逐排 T 接至每台机柜上方（默认关）">强电</button>
+      <button data-fx="bridge-aux" title="配套桥架：接地干线 4.2m + 消防灭火剂管架 4.5m · 横穿机房（默认关）">配套</button>
+      <button data-fx="bridge-config" title="桥架铺设参数：铺设位置 / 布置走向 / 层数 / 高度 / 宽度 / 间距">参数</button>
+    </div>
+    <div class="seg">
+      <button data-fx="bridge-draw-weak" title="手绘弱电路由：进入后在 3D 场景左键点击地面或墙面落点，自动生成弱电桥架，转折处自动补直角弯头">手绘弱电</button>
+      <button data-fx="bridge-draw-strong" title="手绘强电路由：进入后在 3D 场景左键点击地面或墙面落点，自动生成强电桥架，转折处自动补直角弯头">手绘强电</button>
+    </div>
+  </div>
+
+  <div class="cmd-group grow">
+    <input id="search-input" type="text" placeholder="输入机柜编号定位，如 RK001" />
+    <button id="search-btn">定位</button>
+  </div>
+
+  <!-- 「人员」控件组已按需求移除：人物默认直接在机房内全区域自主行走，
+       不再提供姿态/行走/标尺的手动开关。 -->
+
+  <div class="cmd-group" id="tb-ops">
+    <!-- 显示设置（渲染偏好收纳）：画质 / 泛光（方案 D3：从主工具栏下移） -->
+    <div class="gear-wrap">
+      <button id="tb-gear" title="显示设置（画质 / 泛光）">⚙ 显示</button>
+      <div id="gear-pop" class="hidden">
+        <span class="cmd-label">画质</span>
+        <div class="seg" id="quality-seg">
+          <button data-quality="perf" title="性能优先：65% 分辨率缩放、关闭泛光（帧率最低时自动选用）">流畅</button>
+          <button data-quality="balanced" title="均衡：85% 分辨率缩放、保留泛光">均衡</button>
+          <button data-quality="high" class="active" title="高清：全分辨率 + 泛光 + 4x MSAA，边缘最清晰">高清</button>
+        </div>
+        <label class="switch"><input id="bloom-toggle" type="checkbox" checked /><span>泛光</span></label>
+      </div>
+    </div>
+    <button id="tb-save" title="保存当前机房方案（Ctrl+S）">保存</button>
+    <button id="tb-export" title="导出机房方案 JSON">导出</button>
+    <button id="tb-shot" title="将当前 3D 视图截图保存为 PNG">截图</button>
+    <!-- 撤销 / 重做：阶段④反复试错的安全网（Ctrl+Z / Ctrl+Shift+Z） -->
+    <button id="tb-undo" class="ico-btn" title="撤销上一步摆放操作（Ctrl+Z）" disabled>↶</button>
+    <button id="tb-redo" class="ico-btn" title="重做（Ctrl+Shift+Z 或 Ctrl+Y）" disabled>↷</button>
+    <button id="lock-btn" class="primary">锁定布局</button>
+  </div>
+</header>
+
+<!-- ========== 浮动工具坞：随阶段切换的上下文操作 ========== -->
+<!-- 可收折（整改：同源于辅助区登记）：标题条常驻作折叠态把手，主体与提示收入
+     .plan-fold；收起时面板缩为标题条，基本完全释放 3D 机房显示区域 -->
+<div id="plan-tools" class="dock hidden">
+  <div class="dock-head">
+    <div class="dock-title">机房尺寸</div>
+    <button id="plan-collapse" type="button" class="dock-collapse-btn" aria-expanded="true" title="收起机房尺寸面板（释放 3D 视图）">收起 ▾</button>
+  </div>
+  <div class="plan-fold">
+    <div class="dock-body">
+      <label class="field"><span>长 X</span><input id="dim-w" type="number" step="0.5" min="6" /><em>m</em></label>
+      <label class="field"><span>宽 Z</span><input id="dim-d" type="number" step="0.5" min="6" /><em>m</em></label>
+      <label class="field"><span>高 Y</span><input id="dim-h" type="number" step="0.5" min="2.5" /><em>m</em></label>
+    </div>
+    <div class="dock-hint">在俯视图中直接拖动房间边缘即可实时调整</div>
+  </div>
+</div>
+
+<!-- ========== 静电地板铺设菜单（floorPanel.js 驱动） ========== -->
+<!-- 可收折（同 #plan-tools / #aux-panel 范式）：标题条常驻作折叠态把手，主体收入
+     .floor-fold；与 #bridge-panel 互斥（同锚点只显示一个），打开时临时让位阶段坞。
+     默认宽屏展开、窄屏收起；选择记 localStorage（dc3d.floorCollapsed）。 -->
+<div id="floor-panel" class="dock hidden">
+  <div class="dock-head">
+    <div class="dock-title">静电地板铺设<span class="eng-warn" id="fp-warn" title="存在未通过的校验项"></span></div>
+    <div class="dock-head-btns">
+      <button id="fp-collapse" type="button" class="dock-collapse-btn" aria-expanded="true" title="收起静电地板参数面板（释放 3D 视图）">收起 ▾</button>
+      <button id="fp-close" type="button" class="dock-close-btn" title="关闭静电地板参数面板">×</button>
+    </div>
+  </div>
+  <div class="floor-fold">
+    <div class="dock-body" id="fp-body"></div>
+    <div class="dock-split">
+      <button id="fp-save" class="primary">保存</button>
+      <button id="fp-reset">重置</button>
+    </div>
+    <div id="fp-err" class="bp-err-sum"></div>
+    <div class="dock-hint">地板顶面保持 y=0 不变（机柜/设备锚点不动），「离地高度」表现为地板面向下架空层的深度；空腔内自动布置支撑立柱，地板下可敷设强弱电桥架</div>
+  </div>
+</div>
+
+<!-- ========== 强弱电桥架铺设菜单（bridgePanel.js 驱动） ========== -->
+<!-- 可收折 + 与 #floor-panel 互斥；层编辑行动态渲染（#val-list 同款模式）。
+     铺设位置：机柜上方（吊杆悬吊）/ 静电地板下方（架空层支架支撑）；
+     布置走向：全程互联 / 沿排纵贯 / 横穿布线；全部路由轴对齐、逐排对齐规整。 -->
+<div id="bridge-panel" class="dock hidden">
+  <div class="dock-head">
+    <div class="dock-title">桥架铺设参数<span class="eng-warn" id="bp-warn" title="存在未通过的校验项"></span></div>
+    <div class="dock-head-btns">
+      <button id="bp-collapse" type="button" class="dock-collapse-btn" aria-expanded="true" title="收起桥架参数面板（释放 3D 视图）">收起 ▾</button>
+      <button id="bp-close" type="button" class="dock-close-btn" title="关闭桥架参数面板">×</button>
+    </div>
+  </div>
+  <div class="bridge-fold">
+    <div class="dock-body eng-scroll" id="bp-list"></div>
+    <div class="dock-split">
+      <button id="bp-save" class="primary">保存</button>
+      <button id="bp-reset">重置</button>
+      <button id="bp-export">导出</button>
+      <button id="bp-import">导入</button>
+      <input id="bp-import-file" type="file" accept=".json,application/json" class="hidden" />
+    </div>
+    <div id="bp-err" class="bp-err-sum"></div>
+    <div class="dock-hint">铺设位置二选一（机柜上方 / 静电地板下方），走向与间距实时生效；桥架全程轴对齐横平竖直，编辑中的桥架若隐藏会自动打开以便预览</div>
+  </div>
+</div>
+
+<!-- ========== 强弱电桥架手绘布线（bridgeDrawPanel.js 驱动） ========== -->
+<!-- 与 #bridge-panel 非互斥，但进入手绘会自动收起参数菜单坞以释放 3D 视图。
+     敷设方式决定节点落点（地面投影 / 沿墙吸附），安装高度与规格沿用该类桥架参数；
+     节点强制轴对齐（横平竖直），转角处由桥架系统自动补直角弯头；强弱电各走各组、
+     竖向分层兜底避免路径冲突。 -->
+<div id="bridge-draw" class="dock hidden">
+  <div class="dock-head">
+    <div class="dock-title">桥架手绘布线<span class="bd-kind-tag" id="bd-kind-tag">—</span></div>
+    <div class="dock-head-btns">
+      <button id="bd-collapse" type="button" class="dock-collapse-btn" aria-expanded="true" title="收起手绘面板">收起 ▾</button>
+      <button id="bd-close" type="button" class="dock-close-btn" title="退出手绘模式">×</button>
+    </div>
+  </div>
+  <div class="bridge-fold">
+    <div class="dock-body">
+      <div class="bd-row">
+        <span class="bd-lbl">敷设方式</span>
+        <div class="seg" id="bd-mount">
+          <button data-mount="over" class="active">吊顶内</button>
+          <button data-mount="under">地板下</button>
+          <button data-mount="wall">沿墙</button>
+        </div>
+      </div>
+      <div class="dock-hint">左键点击地面或墙面落点（节点自动轴对齐，横平竖直）；转折处自动补直角弯头。<br/>Enter 完成路径 · Backspace 撤销一点 · Esc 退出手绘。</div>
+      <div class="bd-sub">已绘节点（<span id="bd-node-count">0</span>）</div>
+      <ol id="bd-node-list" class="bd-list"></ol>
+      <div class="dock-split">
+        <button id="bd-undo">撤销上一点</button>
+        <button id="bd-finish" class="primary">完成路径</button>
+        <button id="bd-cancel">取消</button>
+      </div>
+      <div class="bd-sub">已保存路径（<span id="bd-saved-count">0</span>）</div>
+      <ul id="bd-saved-list" class="bd-list"></ul>
+      <div class="dock-split">
+        <button id="bd-clear" class="danger">清空全部</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ========== 工程配置（整改：五域量化入口，G-PWR-01 等级为联动根） ========== -->
+<div id="eng-panel" class="dock hidden">
+  <div class="dock-title">系统配置<span class="eng-warn" id="eng-warn" title="存在未通过的校验项"></span></div>
+  <div class="eng-tabs" id="eng-tabs">
+    <button data-eng-tab="base" class="active">等级规模</button>
+    <button data-eng-tab="pwr">供配电</button>
+    <button data-eng-tab="hvac">空调暖通</button>
+    <button data-eng-tab="fire">消防</button>
+    <button data-eng-tab="sec">安防</button>
+    <button data-eng-tab="cab">综合布线</button>
+  </div>
+  <div class="dock-body eng-scroll">
+
+    <div class="eng-sec" data-eng-sec="base">
+      <div class="eng-sec-t">机房等级（GB 50174-2017 分级）</div>
+      <label class="field"><span>等级</span>
+        <select id="eng-tier">
+          <option value="">— 请选择 —</option>
+          <option value="A">A 级（中断造成重大影响）</option>
+          <option value="B">B 级（中断造成较大影响）</option>
+          <option value="C">C 级（其余情况）</option>
+        </select>
+      </label>
+      <label class="field"><span>定级理由</span><input id="eng-tier-reason" type="text" placeholder="依据运行中断后果简述" /></label>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="base">
+      <div class="eng-sec-t">负荷锚点（供配电 ↔ 暖通 共用）</div>
+      <label class="field"><span>功率密度</span><input id="eng-density" type="number" step="0.5" min="0.5" max="40" /><em>kW/柜</em></label>
+      <div class="eng-calc" id="eng-cap-readout">录入密度与机柜数后自动核算</div>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="pwr">
+      <div class="eng-sec-t">供配电</div>
+      <label class="field"><span>UPS 容量</span><input id="eng-ups-kva" type="number" step="10" min="0" /><em>kVA</em></label>
+      <label class="field"><span>冗余方式</span>
+        <select id="eng-ups-red">
+          <option value="N+1">N+1</option><option value="2N">2N 双总线</option>
+          <option value="DR">DR 双路由</option><option value="N">N（无冗余）</option>
+        </select>
+      </label>
+      <label class="field"><span>后备时间</span><input id="eng-ups-backup" type="number" step="1" min="0" /><em>min</em></label>
+      <label class="field"><span>电池类型</span>
+        <select id="eng-ups-battery"><option value="lead-acid">铅酸</option><option value="lithium">锂电（热失控专项）</option></select>
+      </label>
+      <label class="eng-chk"><input id="eng-ups-bypass" type="checkbox" /><span>维护旁路（在线可维护）</span></label>
+      <label class="eng-chk"><input id="eng-keycooling" type="checkbox" /><span>关键制冷接入 UPS 输出母线</span></label>
+      <label class="field"><span>电源形式</span>
+        <select id="eng-load-form">
+          <option value="">— 请选择 —</option>
+          <option value="dual">双重电源</option><option value="two-loop">两回路</option><option value="single">单电源</option>
+        </select>
+      </label>
+      <label class="field"><span>接地形式</span>
+        <select id="eng-ground-form"><option value="TN-S">TN-S</option><option value="joint">联合接地</option></select>
+      </label>
+      <label class="field"><span>接地电阻</span><input id="eng-ground-r" type="number" step="0.1" min="0.1" /><em>Ω</em></label>
+      <label class="eng-chk"><input id="eng-gen" type="checkbox" /><span>设柴油发电机</span></label>
+      <label class="field"><span>柴发容量</span><input id="eng-gen-kva" type="number" step="10" min="0" /><em>kVA</em></label>
+      <label class="field"><span>燃料储备</span><input id="eng-gen-fuel" type="number" step="1" min="0" /><em>h</em></label>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="hvac">
+      <div class="eng-sec-t">空调暖通</div>
+      <label class="field"><span>气流组织</span>
+        <select id="eng-air-type">
+          <option value="CRAC">房间级风冷直膨 CRAC</option><option value="CRAH">冷冻水房间级 CRAH</option>
+          <option value="inline">行级/列间</option><option value="rear-door">背板热管/液冷</option>
+        </select>
+      </label>
+      <label class="field"><span>冷源</span>
+        <select id="eng-cold-src"><option value="air-cooled">风冷直膨</option><option value="chilled-water">冷水机组+冷却塔</option><option value="free-cooling">氟泵/自然冷源</option></select>
+      </label>
+      <label class="field"><span>冗余</span>
+        <select id="eng-hvac-red"><option value="">— 不设 —</option><option value="N">N</option><option value="N+1">N+1</option><option value="2N">2N</option></select>
+      </label>
+      <label class="field"><span>温度设点</span><input id="eng-temp-set" type="number" step="0.5" /><em>℃</em></label>
+      <label class="field"><span>温度区间</span><input id="eng-temp-min" type="number" step="0.5" class="eng-mini" /><em>~</em><input id="eng-temp-max" type="number" step="0.5" class="eng-mini" /><em>℃</em></label>
+      <label class="field"><span>湿度设点</span><input id="eng-rh-set" type="number" step="1" /><em>%</em></label>
+      <label class="field"><span>湿度区间</span><input id="eng-rh-min" type="number" step="1" class="eng-mini" /><em>~</em><input id="eng-rh-max" type="number" step="1" class="eng-mini" /><em>%</em></label>
+      <label class="field"><span>露点窗口</span><input id="eng-dew-min" type="number" step="0.5" class="eng-mini" /><em>~</em><input id="eng-dew-max" type="number" step="0.5" class="eng-mini" /><em>℃</em></label>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="fire">
+      <div class="eng-sec-t">消防</div>
+      <label class="field"><span>主灭火系统</span>
+        <select id="eng-fire-agent">
+          <option value="">— 未配置 —</option>
+          <option value="IG541">IG541 混合气体</option><option value="HFC227ea">七氟丙烷</option>
+          <option value="FK5112">全氟己酮</option><option value="mist">细水雾</option>
+        </select>
+      </label>
+      <label class="field"><span>泄压口面积</span><input id="eng-relief" type="number" step="0.1" min="0" /><em>㎡</em></label>
+      <label class="eng-chk"><input id="eng-vesda" type="checkbox" /><span>极早期烟雾探测（VESDA）</span></label>
+      <div class="eng-note">手提灭火器仅为辅助消防，不能替代主灭火系统</div>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="sec">
+      <div class="eng-sec-t">安防</div>
+      <label class="field"><span>风险等级</span>
+        <select id="eng-risk"><option value="">— 请选择 —</option><option value="low">低</option><option value="mid">中</option><option value="high">高</option></select>
+      </label>
+      <label class="field"><span>录像天数</span><input id="eng-recdays" type="number" step="1" min="1" /><em>天</em></label>
+      <label class="field"><span>码流</span><input id="eng-bitrate" type="number" step="0.5" min="0.5" /><em>Mbps/路</em></label>
+      <label class="field"><span>巡逻速度</span><input id="eng-patrol-speed" type="number" step="0.05" min="0.3" max="2" /><em>m/s</em></label>
+      <div class="eng-note">人员自动巡逻的移动速度；放慢可减少低帧率下的位移跳格感，步频自动匹配</div>
+    </div>
+
+    <div class="eng-sec" data-eng-sec="cab">
+      <div class="eng-sec-t">综合布线</div>
+      <label class="field"><span>铜缆类别</span>
+        <select id="eng-cable-cat"><option>Cat.5e</option><option selected>Cat.6</option><option>Cat.6A</option></select>
+      </label>
+      <label class="field"><span>光缆类型</span>
+        <select id="eng-cable-fiber"><option>OM3</option><option selected>OM4</option><option>OS2</option></select>
+      </label>
+      <label class="field"><span>水平链路长</span><input id="eng-link" type="number" step="1" min="1" /><em>m</em></label>
+      <div class="eng-note">永久链路上限 90m，信道 100m；超距须增设电信间(FD)</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ========== 步骤② 建筑围护：辅助区登记（方案：从工程配置提升至②，跨域三处引用） ========== -->
+<!-- 可收折（整改：常驻显示遮挡 3D 视图）：标题条常驻作折叠态把手，主体与提示收入
+     .aux-fold；收起时面板缩为标题条，基本完全释放 3D 机房显示区域 -->
+<div id="aux-panel" class="dock hidden">
+  <div class="dock-head">
+    <div class="dock-title">辅助区登记</div>
+    <button id="aux-collapse" type="button" class="dock-collapse-btn" aria-expanded="true" title="收起辅助区登记面板（释放 3D 视图）">收起 ▾</button>
+  </div>
+  <div class="aux-fold">
+    <div class="dock-body">
+      <div class="eng-sec">
+        <div class="eng-sec-t">辅助区登记（跨域引用）</div>
+        <div id="eng-aux" class="eng-aux">
+          <label class="eng-chk"><input type="checkbox" data-aux="battery" /><span>电池室/UPS 室（荷载+防火分区+排氢三域引用）</span></label>
+          <label class="eng-chk"><input type="checkbox" data-aux="cylinder" /><span>钢瓶间（独立防火分隔）</span></label>
+          <label class="eng-chk"><input type="checkbox" data-aux="monitor" /><span>监控中心（自身三防）</span></label>
+          <label class="eng-chk"><input type="checkbox" data-aux="fd" /><span>电信间 FD / 设备间 BD / 进线间 CD</span></label>
+          <label class="field eng-aux-area"><span>面积</span><input id="eng-aux-area" type="number" step="1" min="1" /><em>㎡</em></label>
+          <label class="field eng-aux-area"><span>电池室荷载</span><input id="eng-aux-load" type="number" step="1" min="1" /><em>kN/㎡</em></label>
+        </div>
+      </div>
+    </div>
+    <div class="dock-hint">电池室/UPS室、钢瓶间、监控中心、电信间等辅助区一处登记，供配电/消防/暖通三域引用（融合项 B）</div>
+  </div>
+</div>
+
+
+<!-- ========== 步骤⑤ 校验联检（方案：原空步骤「全景预览」改造为自检/交付） ========== -->
+<div id="validate-panel" class="dock hidden">
+  <div class="dock-title">校验联检<span class="eng-warn" id="val-warn" title="存在未通过的校验项"></span></div>
+  <div class="dock-body eng-scroll" id="val-list">
+    <div class="eng-note">正在汇总工程校验结果…</div>
+  </div>
+  <div class="dock-split">
+    <div class="dock-sub">交付</div>
+    <button id="val-export" class="primary">生成报审草稿</button>
+  </div>
+  <div class="dock-hint">点击问题项可跳转对应步骤定位修正 · 3D 场景可自由旋转检视</div>
+</div>
+
+<div id="equip-tools" class="dock hidden">
+  <div class="dock-title">添加设备</div>
+  <div class="dock-body">
+    <div class="equip-group" data-egroup="it">
+      <div class="equip-group-t">IT 与配电</div>
+      <button data-equip="server" class="equip">服务器机柜</button>
+      <button data-equip="rpp" class="equip">列头柜(RPP)</button>
+      <button data-equip="power" class="equip">配电柜</button>
+      <button data-equip="ups" class="equip">UPS</button>
+    </div>
+    <div class="equip-group" data-egroup="hvac">
+      <div class="equip-group-t">暖通</div>
+      <button data-equip="ac" class="equip">空调机组</button>
+    </div>
+    <div class="equip-group" data-egroup="fire">
+      <div class="equip-group-t">消防</div>
+      <button data-equip="fire" class="equip">灭火器</button>
+      <button data-equip="smoke" class="equip">感烟探测器</button>
+      <button data-equip="heat" class="equip">感温探测器</button>
+      <button data-equip="ctrl" class="equip">灭火控制器</button>
+      <button data-equip="cylinder" class="equip">七氟丙烷柜</button>
+    </div>
+    <div class="equip-group" data-egroup="sec">
+      <div class="equip-group-t">安防</div>
+      <button data-equip="cam" class="equip">摄像机</button>
+      <button data-equip="reader" class="equip">门禁读卡器</button>
+      <button data-equip="intrusion" class="equip">入侵探测器</button>
+      <button data-equip="patrol" class="equip">巡查点</button>
+    </div>
+    <div class="equip-group" data-egroup="cab">
+      <div class="equip-group-t">综合布线</div>
+      <button data-equip="odf" class="equip">光纤配线架(ODF)</button>
+      <button data-equip="patch" class="equip">配线架/布线柜</button>
+    </div>
+  </div>
+  <div class="dock-split">
+    <div class="dock-sub">批量摆放</div>
+    <button id="place-col1">摆一列机柜</button>
+    <button id="place-col2">摆两列机柜</button>
+  </div>
+  <div class="dock-split">
+    <div class="dock-sub">多选操作</div>
+    <button id="select-all">全选机柜（Ctrl+A）</button>
+  </div>
+  <div class="dock-hint">拖动设备调整位置 · Shift 点击可多选 · 点击机柜查看 3D 详情</div>
+</div>
+
+<!-- ========== 右侧检查器：选中设备属性 ========== -->
+<aside id="info" class="inspector hidden">
+  <div class="insp-head">
+    <span class="insp-title">设备信息</span>
+    <button id="info-close" class="insp-close">×</button>
+  </div>
+  <div id="info-body"></div>
+</aside>
+
+<!-- ========== 右侧检查器：门窗布置 ========== -->
+<div id="wall-panel" class="inspector hidden">
+  <div class="insp-head">
+    <span class="insp-title">门窗布置</span>
+    <button id="wp-close" class="insp-close">×</button>
+  </div>
+
+  <div class="seg wide" id="wp-tabs">
+    <button data-wall="back" class="active">后墙</button>
+    <button data-wall="left">左墙</button>
+    <button data-wall="front">前墙</button>
+    <button data-wall="right">右墙</button>
+  </div>
+
+  <div class="wp-dims">
+    <label class="field"><span>长</span><input id="wp-length" type="number" step="0.5" min="1" disabled /><em>m</em></label>
+    <label class="field"><span>高</span><input id="wp-height" type="number" step="0.5" min="1" /><em>m</em></label>
+    <label class="field"><span>厚</span><input id="wp-thickness" type="number" step="0.05" min="0.1" /><em>m</em></label>
+  </div>
+
+  <div id="wall-canvas"></div>
+
+  <div class="wp-ops">
+    <button id="wp-add-door">+ 门</button>
+    <button id="wp-add-window">+ 窗</button>
+    <button id="wp-add-relief" title="泄压口：气体灭火保护区超压释放构件">+ 泄压口</button>
+    <button id="wp-delete" class="danger" disabled>删除</button>
+  </div>
+
+  <div id="wp-props" class="wp-props"></div>
+  <div id="wp-status" class="ok">✓ 布局合法，已同步 3D 预览</div>
+
+  <div class="wp-actions">
+    <button id="wp-save" class="primary">保存</button>
+    <button id="wp-export">导出</button>
+    <button id="wp-import">导入</button>
+    <button id="wp-reset">重置</button>
+  </div>
+  <input id="wp-import-file" type="file" accept=".json,application/json" hidden />
+</div>
+
+<!-- ========== 机柜 3D 详情工具条 ========== -->
+<div id="detail-bar" class="detail-bar hidden">
+  <button id="detail-back">← 返回机房</button>
+  <b id="detail-title">机柜</b>
+  <button id="detail-switch" title="在单台精细特写与同排整排之间切换">整排视图</button>
+  <button id="detail-export" title="将当前机柜的配置卡导出为 txt">导出配置卡</button>
+  <span class="muted">点击柜门可单独开合 · 拖动旋转 / 滚轮缩放</span>
+</div>
+
+<!-- ========== 阶段提示（覆盖在场景上方） ========== -->
+<div id="stage-hint"></div>
+
+<!-- ========== 底部状态条 ========== -->
+<footer id="statusbar">
+  <div id="stats">FPS --</div>
+  <div id="help">
+    <span><kbd>左键拖动</kbd> 旋转</span>
+    <span><kbd>滚轮</kbd> 缩放</span>
+    <span><kbd>右键拖动</kbd> 平移</span>
+    <span><kbd>按住空格</kbd> 平移 / <kbd>双击空格</kbd> 默认视角</span>
+    <span><kbd>R</kbd> 旋转设备</span>
+    <span><kbd>Del</kbd> 删除</span>
+  </div>
+</footer>
+
+<div id="tooltip"></div>
+<div id="toast"></div>
+
+<!-- 人物第一人称控件条：进入第一视角后显示，按住按钮持续移动，Esc 或退出按钮返回 -->
+<div id="fps-bar" class="hidden">
+  <button id="fps-fwd" title="前进（W / ↑）">▲ 前进</button>
+  <button id="fps-back" title="后退（S / ↓）">▼ 后退</button>
+  <button id="fps-left" title="左移（A / ←）">◀ 左移</button>
+  <button id="fps-right" title="右移（D / →）">▶ 右移</button>
+  <span class="fps-look-wrap" title="鼠标灵敏度：值越大转头越快">
+    <label for="fps-look">鼠标灵敏度</label>
+    <input id="fps-look" type="range" min="0.5" max="20" step="0.5" value="3.2">
+    <span id="fps-look-val">3.2</span>
+  </span>
+  <span class="fps-hint">WASD / 方向键或按住按钮移动 · 点击锁定鼠标或拖拽环视 · Esc 退出</span>
+  <span id="fps-lock-hint" class="fps-lock-hint"></span>
+  <button id="fps-exit">✕ 退出第一人称</button>
+</div>

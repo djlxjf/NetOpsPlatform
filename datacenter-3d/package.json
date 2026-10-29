@@ -1,0 +1,18 @@
+{
+  "name": "datacenter-3d",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "可交互三维机房可视化（Three.js，实例化渲染，深色科技风）",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}

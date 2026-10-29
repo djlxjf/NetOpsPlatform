@@ -1,0 +1,222 @@
+/* =============================================================================
+ * NetOps · 数智机房 / 机房规划 统一视觉令牌层
+ * -----------------------------------------------------------------------------
+ * 作用：为「数智机房」(/dashboard，监控大屏) 与「机房规划」(/datacenter，3D 规划工具)
+ *       两个页面提供同一套视觉令牌，消除两页各自硬编码色值造成的风格割裂。
+ *
+ * 规则：
+ *   1. 本文件只做「桥接 + 派生」，色值一律引用 src/styles/design-tokens.css 的 --n-*，
+ *      禁止在此写死十六进制色（玻璃层的透明度除外——它必须带 alpha）。
+ *   2. 页面 / 组件只用 --dc-*，不再直接写颜色。
+ *   3. 3D 画布恒为深色场景，故面板采用「玻璃层」：暗色主题=深色玻璃，亮色主题=浅色玻璃，
+ *      两种主题下文字对比度均满足 WCAG AA(4.5:1)。
+ *   4. --dc-* 定义在 :root 上，会通过 Shadow DOM 边界继承进 3D 工具影子树，
+ *      因此 datacenter-3d/src/style.css 可直接消费本层令牌。
+ *
+ * 语义状态色（normal/warning/fault）与 3D 网格、设备 LED 共用同一真源：
+ *   src/styles/design-tokens.css 的 --n-online / --n-warning / --n-alert
+ *   （datacenter-3d/src/themeTokens.js 已同步为同组色值，改动须三者一起改）
+ * ============================================================================= */
+
+:root,
+[data-theme="dark"] {
+  /* ---------- 字体 / 字号 ---------- */
+  --dc-font: var(--n-font-sans);
+  --dc-font-mono: var(--n-font-mono);
+  --dc-fs-xs: var(--n-fs-xs);
+  --dc-fs-sm: var(--n-fs-sm);
+  --dc-fs-md: var(--n-fs-md);
+  --dc-fs-lg: var(--n-fs-lg);
+  --dc-fs-xl: var(--n-fs-xl);
+  --dc-fs-metric: var(--n-fs-3xl);
+
+  /* ---------- 间距（4px 基准） ---------- */
+  --dc-gap-xs: var(--n-space-1);
+  --dc-gap-sm: var(--n-space-2);
+  --dc-gap: var(--n-space-3);
+  --dc-gap-md: var(--n-space-4);
+  --dc-gap-lg: var(--n-space-5);
+  --dc-pad-card: var(--n-space-4);
+
+  /* ---------- 圆角 ---------- */
+  --dc-r-sm: var(--n-r-sm);
+  --dc-r-md: var(--n-r-md);
+  --dc-r-lg: var(--n-r-lg);
+  --dc-r-pill: var(--n-r-full);
+
+  /* ---------- 玻璃面板层（暗色：深蓝墨玻璃） ---------- */
+  --dc-surface: rgba(10, 16, 30, 0.72);
+  --dc-surface-strong: rgba(8, 13, 24, 0.92);
+  --dc-surface-soft: rgba(10, 16, 30, 0.55);
+  --dc-surface-item: rgba(255, 255, 255, 0.04);
+  --dc-surface-item-hover: rgba(34, 211, 238, 0.12);
+  --dc-surface-item-active: rgba(34, 211, 238, 0.20);
+  --dc-hairline: rgba(255, 255, 255, 0.06);
+  /* 控件底（按钮 / 输入框 / 分段控件）：比卡片底更实一点，保证可点击区域可辨识 */
+  --dc-surface-control: rgba(255, 255, 255, 0.06);
+  --dc-surface-control-hover: rgba(255, 255, 255, 0.10);
+
+  /* ---------- 边框 ---------- */
+  --dc-border: var(--n-border);
+  --dc-border-strong: var(--n-border-strong);
+  --dc-border-focus: var(--n-border-focus);
+
+  /* ---------- 文字（暗色下最低层级不使用 --n-text-faint：
+                 #5b6b89 在面板底上仅约 3.5:1，不满足 AA；统一收敛到 --n-text-dim） ---------- */
+  --dc-text: var(--n-text);
+  --dc-text-strong: var(--n-text-strong);
+  --dc-text-dim: var(--n-text-dim);
+  --dc-text-faint: var(--n-text-dim);
+
+  /* ---------- 强调色 ---------- */
+  --dc-accent: var(--n-accent);
+  --dc-accent-strong: var(--n-accent-strong);
+  --dc-accent-soft: var(--n-accent-soft);
+  --dc-accent-soft-2: var(--n-accent-soft-2);
+  --dc-accent-line: var(--n-border-focus);
+
+  /* ---------- 语义状态色（★功能契约：与 3D 网格 / 设备 LED 同源） ---------- */
+  --dc-ok: var(--n-online);
+  --dc-warn: var(--n-warning);
+  --dc-bad: var(--n-alert);
+  --dc-ok-soft: var(--n-online-bg);
+  --dc-warn-soft: var(--n-warning-bg);
+  --dc-bad-soft: var(--n-alert-bg);
+
+  /* ---------- 阴影 / 动效 ---------- */
+  --dc-shadow: var(--n-shadow-md);
+  --dc-shadow-lg: var(--n-shadow-lg);
+  --dc-ease: var(--n-ease);
+  --dc-dur-fast: var(--n-dur-micro);
+  --dc-dur: var(--n-dur-sm);
+  --dc-dur-slow: var(--n-dur-md);
+
+  /* ---------- 图表分类色（与 --n-c1..c8 同源） ---------- */
+  --dc-chart-1: var(--n-c1);
+  --dc-chart-2: var(--n-c2);
+  --dc-chart-3: var(--n-c3);
+  --dc-chart-4: var(--n-c4);
+  --dc-chart-5: var(--n-c5);
+
+  /* ---------- 布局尺度 ---------- */
+  /* 监控大屏左/右信息列宽度；3D 规划工具折叠工作流时由 JS 同步改写 --dc-rail-w */
+  --dc-rail-w: 240px;
+}
+
+/* ============================ 亮色主题 ============================ */
+[data-theme="light"] {
+  --dc-surface: rgba(255, 255, 255, 0.88);
+  --dc-surface-strong: rgba(255, 255, 255, 0.97);
+  --dc-surface-soft: rgba(255, 255, 255, 0.72);
+  --dc-surface-item: rgba(15, 23, 42, 0.035);
+  --dc-surface-item-hover: rgba(8, 145, 178, 0.10);
+  --dc-surface-item-active: rgba(8, 145, 178, 0.16);
+  --dc-hairline: rgba(15, 23, 42, 0.08);
+  --dc-surface-control: rgba(15, 23, 42, 0.045);
+  --dc-surface-control-hover: rgba(15, 23, 42, 0.085);
+}
+
+/* ============================ 跟随系统 ============================ */
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] {
+    --dc-surface: rgba(255, 255, 255, 0.88);
+    --dc-surface-strong: rgba(255, 255, 255, 0.97);
+    --dc-surface-soft: rgba(255, 255, 255, 0.72);
+    --dc-surface-item: rgba(15, 23, 42, 0.035);
+    --dc-surface-item-hover: rgba(8, 145, 178, 0.10);
+    --dc-surface-item-active: rgba(8, 145, 178, 0.16);
+    --dc-hairline: rgba(15, 23, 42, 0.08);
+    --dc-surface-control: rgba(15, 23, 42, 0.045);
+    --dc-surface-control-hover: rgba(15, 23, 42, 0.085);
+  }
+}
+
+/* ============================ 通用状态样式原语 ============================ */
+/* 供 Vue 叠加层与 3D 工具影子树共用（后者经 Shadow DOM 继承本文件变量后生效）。
+   组件只引用这些类名 + --dc-* 变量，避免各写一套 hover / disabled / loading。 */
+
+/* 骨架屏（加载态）：底色 + 流光，替代「空白等待」 */
+.dc-skeleton {
+  position: relative;
+  display: block;
+  border-radius: var(--dc-r-sm);
+  background: var(--dc-surface-item);
+  overflow: hidden;
+}
+.dc-skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--dc-surface-item-hover) 50%,
+    transparent 100%
+  );
+  animation: dc-skeleton-sweep 1.4s var(--dc-ease) infinite;
+}
+@keyframes dc-skeleton-sweep {
+  100% { transform: translateX(100%); }
+}
+
+/* 空数据 / 异常 / 加载中的统一提示块 */
+.dc-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--dc-gap-sm);
+  min-height: 96px;
+  padding: var(--dc-gap-md) var(--dc-gap);
+  text-align: center;
+  color: var(--dc-text-dim);
+  font-size: var(--dc-fs-sm);
+  line-height: 1.6;
+}
+.dc-state-icon { font-size: 20px; line-height: 1; opacity: 0.85; }
+.dc-state-title { color: var(--dc-text); font-size: var(--dc-fs-md); font-weight: 600; }
+.dc-state-hint { color: var(--dc-text-dim); font-size: var(--dc-fs-xs); }
+.dc-state.is-error .dc-state-title { color: var(--dc-bad); }
+.dc-state.is-empty .dc-state-icon { color: var(--dc-text-dim); }
+
+/* 状态徽标（标签） */
+.dc-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 1px 8px;
+  border-radius: var(--dc-r-pill);
+  border: 1px solid transparent;
+  font-size: var(--dc-fs-xs);
+  line-height: 1.7;
+  white-space: nowrap;
+}
+.dc-tag.is-ok { color: var(--dc-ok); background: var(--dc-ok-soft); border-color: color-mix(in srgb, var(--dc-ok) 40%, transparent); }
+.dc-tag.is-warn { color: var(--dc-warn); background: var(--dc-warn-soft); border-color: color-mix(in srgb, var(--dc-warn) 40%, transparent); }
+.dc-tag.is-bad { color: var(--dc-bad); background: var(--dc-bad-soft); border-color: color-mix(in srgb, var(--dc-bad) 40%, transparent); }
+.dc-tag.is-info { color: var(--dc-accent); background: var(--dc-accent-soft); border-color: var(--dc-accent-line); }
+.dc-tag.is-muted { color: var(--dc-text-dim); background: var(--dc-surface-item); border-color: var(--dc-hairline); }
+
+/* 状态圆点（表格 / 列表内联指示） */
+.dc-dot {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex: none;
+  background: var(--dc-text-dim);
+}
+.dc-dot.normal, .dc-dot.is-ok { background: var(--dc-ok); }
+.dc-dot.warning, .dc-dot.is-warn { background: var(--dc-warn); }
+.dc-dot.fault, .dc-dot.is-bad { background: var(--dc-bad); }
+/* 桥架系统三类标识色（与 datacenter-3d BridgeSystem 渲染色一致：
+   弱电 #38bdf8 / 强电 #f59e0b / 配套=接地 #34d399 + 消防 #a3e635 双色渐变） */
+.dc-dot.bridge-weak { background: #38bdf8; }
+.dc-dot.bridge-strong { background: #f59e0b; }
+.dc-dot.bridge-aux { background: linear-gradient(135deg, #34d399 0 50%, #a3e635 50% 100%); }
+
+/* 尊重减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  .dc-skeleton::after { animation: none; }
+}

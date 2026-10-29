@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>三维机房布局规划工具 · Data Center Planner 3D</title>
+  <link rel="stylesheet" href="./src/style.css" />
+  <!-- 依赖通过 import map 从 CDN 加载（需联网）；Vite 环境下由构建工具解析 three -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+    }
+  }
+  </script>
+</head>
+<body>
+  <!-- 挂载根：boot.js 会把 tool-shell.html 的 UI 标记注入此处 -->
+  <div id="dc-root"></div>
+  <script type="module" src="./src/boot.js"></script>
+</body>
+</html>

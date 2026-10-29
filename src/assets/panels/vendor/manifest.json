@@ -1,0 +1,601 @@
+{
+ "hikvision": [
+  {
+   "names": [
+    "Hikvision"
+   ],
+   "file": "vdaaeu6f.png",
+   "uSize": 2,
+   "origW": 6687,
+   "origH": 1226,
+   "bodyW": 6153,
+   "bodyH": 1226
+  },
+  {
+   "names": [
+    "vision"
+   ],
+   "file": "nmmp5fm3.png",
+   "uSize": 5,
+   "origW": 3507,
+   "origH": 1461,
+   "bodyW": 3227,
+   "bodyH": 1461
+  },
+  {
+   "names": [
+    "2盘位"
+   ],
+   "file": "okk0m2vm.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "4U高-型号未知后续补充"
+   ],
+   "file": "vcdpa8nx.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "DS-VE22S-B"
+   ],
+   "file": "fam3710u.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "HIKVISION 10路"
+   ],
+   "file": "xuic9lzr.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "海康 16路"
+   ],
+   "file": "evbjn6ar.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "硬盘录像机"
+   ],
+   "file": "if6qmfth.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "IVMS-3000C"
+   ],
+   "file": "xixa1tg6.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "DS-A72036RH-LCVS"
+   ],
+   "file": "bokt6nit.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "DS-VE22S-B（2）"
+   ],
+   "file": "frecdoeh.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DS-6104HC-SATA"
+   ],
+   "file": "vcbc97j9.png",
+   "uSize": 2,
+   "origW": 3807,
+   "origH": 703,
+   "bodyW": 3503,
+   "bodyH": 703
+  },
+  {
+   "names": [
+    "DS-A908RE-B"
+   ],
+   "file": "itegr1n2.png",
+   "uSize": 3,
+   "origW": 3801,
+   "origH": 1051,
+   "bodyW": 3497,
+   "bodyH": 1051
+  },
+  {
+   "names": [
+    "CCTV video recorder"
+   ],
+   "file": "omadsmyp.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DS-3E0326P-S"
+   ],
+   "file": "3rufuylc.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DS-VM21S-B"
+   ],
+   "file": "ubvkbawp.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 703,
+   "bodyW": 3497,
+   "bodyH": 703
+  },
+  {
+   "names": [
+    "DS-3E3728-H"
+   ],
+   "file": "bhnl1hsa.png",
+   "uSize": 1,
+   "origW": 3803,
+   "origH": 353,
+   "bodyW": 3499,
+   "bodyH": 353
+  },
+  {
+   "names": [
+    "DS-96128N-I24"
+   ],
+   "file": "ux4kjweq.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "海康威视HIKVISION"
+   ],
+   "file": "x3hanriy.png",
+   "uSize": 1,
+   "origW": 3803,
+   "origH": 353,
+   "bodyW": 3499,
+   "bodyH": 353
+  },
+  {
+   "names": [
+    "海康智能存储DS-96016NX"
+   ],
+   "file": "ayav9hnc.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1053,
+   "bodyW": 3497,
+   "bodyH": 1053
+  },
+  {
+   "names": [
+    "DS-VE2S-XB"
+   ],
+   "file": "5bpeof7u.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "HIKVISION-DS-A71072R"
+   ],
+   "file": "bphgkwii.png",
+   "uSize": 8,
+   "origW": 3801,
+   "origH": 2801,
+   "bodyW": 3497,
+   "bodyH": 2801
+  },
+  {
+   "names": [
+    "HIKVISION-1"
+   ],
+   "file": "exyjgsgk.png",
+   "uSize": 3,
+   "origW": 3803,
+   "origH": 1053,
+   "bodyW": 3499,
+   "bodyH": 1053
+  },
+  {
+   "names": [
+    "HIKVISION-2"
+   ],
+   "file": "ma3hulqu.png",
+   "uSize": 1,
+   "origW": 3509,
+   "origH": 329,
+   "bodyW": 3229,
+   "bodyH": 329
+  },
+  {
+   "names": [
+    "DS-A82048D"
+   ],
+   "file": "dtimecob.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "DS-CD22D-BHW6PP"
+   ],
+   "file": "4wzxihwh.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 686,
+   "bodyW": 3497,
+   "bodyH": 686
+  },
+  {
+   "names": [
+    "DS-IE1064-03UBA"
+   ],
+   "file": "vwtbudru.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DS-IX2003-A3UX"
+   ],
+   "file": "lxcqrszy.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 686,
+   "bodyW": 3497,
+   "bodyH": 686
+  },
+  {
+   "names": [
+    "海康24硬盘位录像机"
+   ],
+   "file": "n9xqtndl.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "海康录像机"
+   ],
+   "file": "zdfarvrr.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 703,
+   "bodyW": 3497,
+   "bodyH": 703
+  },
+  {
+   "names": [
+    "海康威视录像机"
+   ],
+   "file": "qurfzlvn.png",
+   "uSize": 4,
+   "origW": 3801,
+   "origH": 1401,
+   "bodyW": 3497,
+   "bodyH": 1401
+  },
+  {
+   "names": [
+    "海康威视NVR网络录像机"
+   ],
+   "file": "cltzpjc1.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "海康威视超脑硬盘录像机"
+   ],
+   "file": "arobgnor.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "DS-9632NI-M8R"
+   ],
+   "file": "9a09kw6b.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "Hikvision DS-3T1510HP V2"
+   ],
+   "file": "uhyese1c.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DS-A82048D（8U）"
+   ],
+   "file": "ekclglpr.png",
+   "uSize": 8,
+   "origW": 3801,
+   "origH": 2801,
+   "bodyW": 3497,
+   "bodyH": 2801
+  },
+  {
+   "names": [
+    "海康威视"
+   ],
+   "file": "9egzq1fn.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "海康威视-视频上云流媒体服务器",
+    "海康威视-视频上云管理服务器"
+   ],
+   "file": "m4togelj.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "HIKVISION硬盘录像机"
+   ],
+   "file": "s3fwb150.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "海康硬盘录像机"
+   ],
+   "file": "rerfrpuu.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "海康 DS-3E3728-HL"
+   ],
+   "file": "mdfuglrd.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  }
+ ],
+ "dahua": [
+  {
+   "names": [
+    "16盘位"
+   ],
+   "file": "hblnavdt.png",
+   "uSize": 3,
+   "origW": 3801,
+   "origH": 1051,
+   "bodyW": 3497,
+   "bodyH": 1051
+  },
+  {
+   "names": [
+    "DH-DSS-H8900S3"
+   ],
+   "file": "mu9ou2ym.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DH-EVS5024S-R"
+   ],
+   "file": "1k6fpajz.png",
+   "uSize": 4,
+   "origW": 3803,
+   "origH": 1403,
+   "bodyW": 3499,
+   "bodyH": 1403
+  },
+  {
+   "names": [
+    "大华硬盘录像机"
+   ],
+   "file": "wdda9dgg.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "大华 磁盘阵列"
+   ],
+   "file": "kv7uj7mi.png",
+   "uSize": 6,
+   "origW": 3801,
+   "origH": 2101,
+   "bodyW": 3497,
+   "bodyH": 2101
+  },
+  {
+   "names": [
+    "系统服务器"
+   ],
+   "file": "pyplxwm2.png",
+   "uSize": 3,
+   "origW": 3801,
+   "origH": 1051,
+   "bodyW": 3497,
+   "bodyH": 1051
+  },
+  {
+   "names": [
+    "高清解码器"
+   ],
+   "file": "znmqqswy.png",
+   "uSize": 2,
+   "origW": 3801,
+   "origH": 701,
+   "bodyW": 3497,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "全程监控推流网关"
+   ],
+   "file": "ycw0o409.png",
+   "uSize": 3,
+   "origW": 3801,
+   "origH": 1051,
+   "bodyW": 3497,
+   "bodyH": 1051
+  },
+  {
+   "names": [
+    "大华服务器 云存储服务器"
+   ],
+   "file": "spk2if6m.png",
+   "uSize": 2,
+   "origW": 3803,
+   "origH": 701,
+   "bodyW": 3499,
+   "bodyH": 701
+  },
+  {
+   "names": [
+    "大华 DH-DTP-9110D-B"
+   ],
+   "file": "ajz01qkq.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  },
+  {
+   "names": [
+    "DH-CSS8148S-10GIR"
+   ],
+   "file": "g5jeybuv.png",
+   "uSize": 6,
+   "origW": 3801,
+   "origH": 2101,
+   "bodyW": 3497,
+   "bodyH": 2101
+  },
+  {
+   "names": [
+    "大华录像机"
+   ],
+   "file": "zvmw0qaf.png",
+   "uSize": 3,
+   "origW": 3801,
+   "origH": 1051,
+   "bodyW": 3497,
+   "bodyH": 1051
+  },
+  {
+   "names": [
+    "DH-S6600-24XF2QF-A"
+   ],
+   "file": "7yktvjfv.png",
+   "uSize": 1,
+   "origW": 3801,
+   "origH": 351,
+   "bodyW": 3497,
+   "bodyH": 351
+  }
+ ]
+}

@@ -1,0 +1,1216 @@
+/* ===========================================================================
+   DataCenter 3D 工具样式（v2 全新视觉体系）
+
+   布局骨架：
+     左导航轨 rail (240px) │ 主场景 canvas │ 右侧检查器 inspector (300px)
+     顶部命令栏 topbar (56px) 贯穿；底部状态条 statusbar (34px) 贯穿
+
+   设计基调：深空蓝底 + 青蓝主色 + 玻璃拟态面板 + 细描边高光，
+   与监控大屏风格统一，同时保证密集数据的可读性。
+   =========================================================================== */
+
+:root {
+  /* ------------------------------------------------------------------------
+     统一视觉令牌桥接（2026-10-23 整改：跨页风格割裂）
+     ------------------------------------------------------------------------
+     本工具跑在 Vue 宿主的 Shadow DOM 内。CSS 自定义属性会跨越 shadow 边界继承，
+     因此这里全部改为引用宿主应用的 --n-* / --dc-* 设计令牌：
+       - 「机房规划」与「数智机房」共用同一套色板、圆角、间距，主题切换同步生效；
+       - 独立运行（无宿主令牌）时由右侧兜底值保证原有观感不变。
+     注意：class 级样式不会穿透 shadow 边界，只有变量会继承——故本文件仍需自带规则。
+     ------------------------------------------------------------------------ */
+  /* 底色层次 */
+  --bg: var(--n-bg-base, #060910);
+  --bg-elev: var(--n-bg-app, #0b1119);
+  --surface: var(--dc-surface, rgba(16, 24, 36, 0.82));
+  --surface-solid: var(--n-bg-panel, #101824);
+  --surface-hi: var(--dc-surface-control, rgba(30, 42, 58, 0.9));
+
+  /* 主色与语义色（语义状态色唯一真源见 datacenter-3d/src/themeTokens.js，改动须同步）
+     整改（主题一致性）：本文件原混用两套青蓝——#22d3ee（= --accent）与
+     #2bd6ff（themeTokens 旧值）。二者相差约 2%/通道，肉眼难辨但同屏并排时
+     会出现「两种高亮蓝」，且改主题时容易漏改一半。现已全部统一到 --accent
+     一族；下文所有 rgba(34, 211, 238, x) 均为 --accent 的派生透明度，
+     新增派生色请沿用同一基色，不要另起十六进制值。 */
+  --accent: var(--n-accent, #22d3ee);
+  --accent-dim: var(--n-accent-soft, rgba(34, 211, 238, 0.16));
+  --accent-line: var(--n-border-focus, rgba(34, 211, 238, 0.34));
+  --text: var(--n-text, #dbe7f3);
+  --text-strong: var(--n-text-strong, #f1f5fb);
+  --text-dim: var(--n-text-dim, #8ba0b5);
+  /* 整改（可读性 D-15）：原值 #5b6d80 与底色 #060910 对比仅约 3.7:1，
+     而它承载的是 10-11px 的提示文本（dock-hint / rail-foot / cmd-label /
+     statusbar help / .field em）——小字号对对比度更敏感，低于 WCAG AA 的 4.5:1。
+     提亮至 #6f8496 后约 5.1:1，通过 AA；仍保持暗于 --text-dim(约 7.4:1) 的层级。
+     现桥接到 --n-text-dim（设计令牌层已保证 AA），不再单挂一个本地色。 */
+  --text-faint: var(--n-text-dim, #6f8496);
+  /* 语义状态色：与 3D 网格 / 设备 LED / 监控大屏同源（design-tokens.css --n-online 等） */
+  --ok: var(--n-online, #21D07A);
+  --warn: var(--n-warning, #FFB000);
+  --bad: var(--n-alert, #FF3B30);
+
+  /* 尺寸 */
+  --rail-w: 240px;
+  --insp-w: 300px;
+  --topbar-h: 56px;
+  --status-h: 34px;
+  --detailbar-reserve: 0px; /* 详情工具条可见时由 JS 写入「条高+间距」，供检查器面板让位 */
+  --r-sm: var(--n-r-sm, 6px);
+  --r-md: var(--n-r-md, 10px);
+  --r-lg: var(--n-r-lg, 14px);
+  /* 整改（下拉控件统一）：工具整体按暗色呈现。color-scheme 为继承属性，Shadow 模式下
+     本块转为 :host 后覆盖宿主 src/style.css:20 的 color-scheme:light dark 继承，
+     Chromium/Electron 的原生 select 弹窗/spinner/滚动条随之暗色（弹窗不再白色）。 */
+  color-scheme: dark;
+  /* 共享控件令牌：input 与 select 同源同值（取值=既有 input 硬编码值，input 零回归） */
+  --ctl-bg: rgba(0, 0, 0, 0.3);
+  --ctl-border: rgba(255, 255, 255, 0.09);
+  --ctl-border-hover: var(--accent-line);
+  --ctl-border-focus: var(--accent);
+  --ctl-radius: var(--r-sm);
+  --ctl-pad-y: 6px;
+  --ctl-pad-x: 9px;
+  --ctl-arrow-gutter: 28px; /* 右侧自定义箭头预留：12px 箭头 + 右 9px + 7px 呼吸 */
+  /* 自定义下拉箭头：stroke #8ba0b5 = 暗色 --text-dim 值。data-URI 为静态串无法引用
+     var()，按「玻璃层透明度」同类例外写死；工具恒深色场景（datacenter-tokens.css
+     头条第 3 条）。select 规则与自绘下拉 trigger（.dcx-trigger）共用本令牌。 */
+  --ctl-arrow: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath d='M2.5 4.5 6 8l3.5-3.5' fill='none' stroke='%238ba0b5' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { width: 100%; height: 100%; overflow: hidden; background: var(--bg); }
+
+body {
+  font-family: "Inter", "Segoe UI", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  font-size: 13px;
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+#app { position: fixed; inset: 0; }
+.hidden { display: none !important; }
+.muted { color: var(--text-dim); font-size: 11px; }
+
+kbd {
+  display: inline-block;
+  padding: 1px 5px;
+  margin-right: 3px;
+  background: var(--surface-hi);
+  border: 1px solid var(--accent-line);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 10px;
+  color: var(--accent);
+}
+
+/* ---------- 通用控件 ---------- */
+button {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--surface-hi);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--r-sm);
+  padding: 6px 11px;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+button:hover:not(:disabled) { border-color: var(--accent-line); color: #fff; background: rgba(34, 211, 238, 0.1); }
+button:disabled { opacity: 0.4; cursor: not-allowed; }
+button.active { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); }
+button.primary { background: var(--accent-dim); border-color: var(--accent); color: var(--accent); font-weight: 500; }
+button.primary:hover { background: rgba(34, 211, 238, 0.26); }
+button.danger { color: var(--bad); border-color: rgba(255, 59, 48, 0.3); }
+button.danger:hover:not(:disabled) { background: rgba(255, 59, 48, 0.14); border-color: var(--bad); }
+
+input[type="text"], input[type="number"] {
+  font-family: inherit;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--ctl-bg);
+  border: 1px solid var(--ctl-border);
+  border-radius: var(--ctl-radius);
+  padding: var(--ctl-pad-y) var(--ctl-pad-x);
+}
+input:focus, select:focus { outline: none; border-color: var(--ctl-border-focus); }
+
+/* 整改（可达性 D-9）：全文件此前无任何 :focus-visible 规则，键盘用户
+   按 Tab 遍历界面时完全看不到焦点落在哪个控件上（WCAG 2.4.7）。
+   统一为 2px 强调色焦点环 + 2px 偏移，不与 hover 态混淆。
+   注意：此前 main.js 全局劫持 Tab，键盘遍历本就不可用；
+   该劫持已收紧为「仅焦点在文档主体时生效」，此处补上可见焦点环。 */
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }
+/* 输入框已有边框变色反馈，焦点环改为内侧细环，避免与外边框叠成粗边 */
+input:focus-visible, select:focus-visible { outline-offset: -1px; }
+
+input::placeholder { color: var(--text-faint); }
+input:disabled { opacity: 0.5; }
+
+/* ---------- 下拉选择控件（整改：15 处 select 统一规范） ----------
+   原生优先：保留 <select> 语义与 UA 弹窗（键盘可达/表单语义免费获得），只做
+   「暗色化 + 去铬 + 定制箭头」；与 input 共用 --ctl-* 令牌。
+   注意：不设 font-size——#eng-panel 既有规则保持 12px，.wp-props 继承 11px。 */
+select {
+  appearance: none;
+  -webkit-appearance: none;
+  font-family: inherit;
+  color: var(--text);
+  background-color: var(--ctl-bg);
+  /* 自定义箭头：stroke #8ba0b5 = 暗色 --text-dim 值（data-URI 为静态串无法引用 var()；
+     工具恒深色场景，见 datacenter-tokens.css 头条第 3 条） */
+  background-image: var(--ctl-arrow);
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+  border: 1px solid var(--ctl-border);
+  border-radius: var(--ctl-radius);
+  padding: var(--ctl-pad-y) var(--ctl-arrow-gutter) var(--ctl-pad-y) var(--ctl-pad-x);
+  cursor: pointer;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+/* 悬停只改边框、不改底色（避免玻璃面板亮块、避免与 input 行为分叉）；禁用品不被 hover 点亮 */
+input[type="text"]:hover:not(:disabled),
+input[type="number"]:hover:not(:disabled),
+select:hover:not(:disabled) { border-color: var(--ctl-border-hover); }
+/* 展开期间保持强调描边（:open 需 Chromium 120+，本项目 Electron 33 = Chromium 130 满足） */
+select:open { border-color: var(--ctl-border-focus); }
+/* 弹出列表配色：color-scheme:dark 只给 UA 默认深灰，显式色把弹窗拉回 --surface-solid/--text
+   体系，并在 color-scheme 继承万一失效时兜底。禁止给 option:hover/checked 设背景（高亮交给 UA） */
+select option { background-color: var(--surface-solid); color: var(--text); }
+select optgroup { background-color: var(--surface-solid); color: var(--text-dim); font-weight: 600; }
+select option:disabled { color: var(--text-faint); }
+
+/* ---------- 自绘下拉弹窗（selectMenu.js） ----------
+   原生 select 弹窗渲染在文档顶层、只跟随「文档级」color-scheme；本工具在 Shadow DOM
+   内，:host 上的 color-scheme:dark 传不进去（2026-10-24 对照实验证实），弹窗恒为
+   系统浅色。故保留原生 <select> 作隐藏状态载体（.dcx-native，value/option/change
+   既有逻辑零改动），视觉与弹窗全部自绘：配色走 --dc-* 令牌，与整体 UI 一致。 */
+.dcx { position: relative; display: inline-flex; flex: 1 1 auto; min-width: 0; }
+.field > .dcx { flex: 1 1 auto; min-width: 0; }
+.dcx-native { position: absolute; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; margin: 0; opacity: 0; pointer-events: none; }
+.dcx-trigger {
+  position: relative; /* 箭头伪元素的定位基准 */
+  display: inline-flex; align-items: center; gap: 6px;
+  width: 100%; min-height: 30px;
+  font-family: inherit; font-size: 12px; color: var(--text); text-align: left;
+  background-color: var(--ctl-bg);
+  border: 1px solid var(--ctl-border);
+  border-radius: var(--ctl-radius);
+  padding: var(--ctl-pad-y) var(--ctl-arrow-gutter) var(--ctl-pad-y) var(--ctl-pad-x);
+  cursor: pointer;
+  transition: border-color 0.14s;
+}
+/* 下拉箭头用伪元素绘制，不用元素背景：全局 button:hover/active 的 background 简写会把
+   元素背景的 background-image 重置为 none（悬停即箭头消失，2026-10-24 实测确诊），
+   而伪元素有独立背景层、永不受该简写影响，从机制上杜绝箭头闪烁/消失。 */
+.dcx-trigger::after {
+  content: "";
+  position: absolute;
+  right: 9px; top: 50%;
+  width: 12px; height: 12px;
+  transform: translateY(-50%);
+  background: var(--ctl-arrow) no-repeat center / 12px 12px;
+  pointer-events: none;
+}
+/* 悬停/按下只改边框、底色恒定（覆盖全局 button:hover/active 的背景填充，
+   避免玻璃面板上出现亮块，也与 input/select 的悬停行为一致） */
+.dcx-trigger:hover:not(:disabled), .dcx-trigger:active:not(:disabled) { background-color: var(--ctl-bg); }
+.dcx-trigger:hover:not(:disabled) { border-color: var(--ctl-border-hover); }
+/* 聚焦/展开期间保持强调描边（鼠标聚焦无外环，由全局 :focus:not(:focus-visible) 处理） */
+.dcx-trigger:focus, .dcx-trigger[aria-expanded="true"] { border-color: var(--ctl-border-focus); }
+/* 键盘焦点环与 select 一致：2px 强调色 + 内侧 1px 偏移，避免与外边框叠成粗边 */
+.dcx-trigger:focus-visible { outline: 2px solid var(--accent); outline-offset: -1px; }
+.dcx-trigger[aria-expanded="true"] { border-color: var(--ctl-border-focus); }
+.dcx-trigger:disabled { opacity: 0.5; cursor: not-allowed; }
+.dcx-value { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dcx-value.is-empty { color: var(--text-faint); }
+/* 弹窗：挂在本工具影子树根下，z-index 高于全部面板/状态条，不被 .eng-scroll 裁剪 */
+.dcx-pop {
+  position: absolute; z-index: 60;
+  min-width: 120px; max-width: 320px; max-height: 240px;
+  overflow-y: auto; overscroll-behavior: contain;
+  padding: 4px;
+  background: var(--surface-solid);
+  border: 1px solid var(--n-border-strong, rgba(255, 255, 255, 0.12));
+  border-radius: var(--r-md);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  font-size: 12px; color: var(--text);
+  animation: dcx-pop-in 0.12s ease;
+}
+@keyframes dcx-pop-in { from { opacity: 0; transform: translateY(-4px); } }
+@media (prefers-reduced-motion: reduce) { .dcx-pop { animation: none; } }
+.dcx-opt { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border-radius: var(--r-sm); cursor: pointer; }
+.dcx-opt-t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dcx-opt-mark { display: none; flex: none; color: var(--accent); font-size: 11px; }
+.dcx-opt.is-selected { color: var(--accent); }
+.dcx-opt.is-selected .dcx-opt-mark { display: inline; }
+.dcx-opt.is-active { background: var(--dc-surface-item-hover, rgba(34, 211, 238, 0.12)); }
+.dcx-opt.is-disabled { color: var(--text-faint); cursor: not-allowed; }
+.dcx-opt.is-disabled.is-active { background: transparent; }
+
+/* 分段控件 */
+.seg { display: inline-flex; background: rgba(0, 0, 0, 0.28); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: var(--r-sm); overflow: hidden; }
+.seg button { border: none; border-radius: 0; background: transparent; padding: 6px 10px; white-space: nowrap; }
+.seg button + button { border-left: 1px solid rgba(255, 255, 255, 0.07); }
+.seg button.active { background: var(--accent-dim); }
+.seg.wide { display: flex; width: 100%; }
+.seg.wide button { flex: 1; }
+
+/* 字段行 */
+.field { display: flex; align-items: center; gap: 7px; }
+.field > span { color: var(--text-dim); font-size: 11px; min-width: 26px; }
+.field > input { width: 100%; min-width: 0; }
+.field > em { color: var(--text-faint); font-size: 11px; font-style: normal; }
+
+/* ---------- 提示文本恒单行（整改：下拉选项前的标签/标题/单位不得换行折行，
+   超长时省略号截断；文案已按规范精简，此处为布局兜底） ---------- */
+/* :not(.dcx)：自绘下拉的包裹层也是 .field 的直接子 span，须排除，否则会被
+   误加 overflow/ellipsis（其内容是高 30px 的 trigger 与隐藏原生 select） */
+.field > span:not(.dcx) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.field > em { flex: none; white-space: nowrap; }
+.eng-sec-t, .op-sec-t { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- 顶部命令栏 ---------- */
+#topbar {
+  position: fixed; top: 0; left: 0; right: 0; height: var(--topbar-h);
+  display: flex; align-items: center; gap: 22px;
+  flex-wrap: nowrap;
+  overflow-x: auto; overflow-y: hidden;
+  scrollbar-width: thin;
+  padding: 0 16px;
+  background: linear-gradient(180deg, rgba(8, 12, 20, 0.96), rgba(8, 12, 20, 0.82));
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  z-index: 20;
+  /* 顶栏所有直接子元素禁止收缩/换行：品牌区、按钮组、锁定布局等恒单行，
+     窄屏整体横向滚动（用户要求：工作流/机房规划/锁定布局必须同行水平排列） */
+  white-space: nowrap;
+}
+#topbar > * { flex: none; }
+#topbar .brand b, #topbar .brand i { white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 10px; padding-right: 18px; border-right: 1px solid rgba(255, 255, 255, 0.07); }
+.logo {
+  width: 26px; height: 26px; border-radius: 7px;
+  background: linear-gradient(135deg, var(--accent), #3b82f6);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.45);
+  position: relative;
+}
+.logo::after {
+  content: ""; position: absolute; inset: 7px;
+  border: 1.5px solid rgba(255, 255, 255, 0.9); border-radius: 2px;
+}
+.brand-txt { display: flex; flex-direction: column; line-height: 1.25; }
+.brand-txt b { font-size: 13px; font-weight: 600; letter-spacing: 0.3px; }
+.brand-txt i { font-size: 10px; font-style: normal; color: var(--text-faint); letter-spacing: 0.5px; }
+
+.cmd-group { display: flex; align-items: center; gap: 8px; }
+.cmd-group.grow { flex: 1; max-width: 320px; }
+.cmd-group.grow input { flex: 1; }
+.cmd-label { color: var(--text-faint); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; }
+
+.switch { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--text-dim); cursor: pointer; }
+.switch input { accent-color: var(--accent); }
+
+/* ---------- 左侧导航轨 ---------- */
+#stepper {
+  position: fixed; top: var(--topbar-h); left: 0; bottom: var(--status-h);
+  width: var(--rail-w);
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 16px 12px;
+  background: linear-gradient(90deg, rgba(9, 13, 21, 0.94), rgba(9, 13, 21, 0.78));
+  border-right: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  z-index: 15;
+}
+.rail-head {
+  font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase;
+  color: var(--text-faint); padding: 0 8px 10px;
+}
+.rail-item {
+  display: flex; align-items: center; gap: 11px;
+  width: 100%; padding: 10px 11px; text-align: left;
+  background: transparent; border: 1px solid transparent; border-radius: var(--r-md);
+}
+.rail-item .idx {
+  font-size: 11px; font-weight: 700; color: var(--text-faint);
+  min-width: 20px; font-variant-numeric: tabular-nums;
+}
+.rail-item .txt { display: flex; flex-direction: column; line-height: 1.3; font-size: 12.5px; }
+.rail-item .txt em { font-style: normal; font-size: 10.5px; color: var(--text-faint); }
+.rail-item:hover { background: rgba(255, 255, 255, 0.04); }
+.rail-item.active { background: var(--accent-dim); border-color: var(--accent-line); }
+.rail-item.active .idx { color: var(--accent); }
+.rail-item.active .txt { color: #fff; }
+.rail-foot { margin-top: auto; padding: 12px 8px 0; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.rail-foot-tip { font-size: 10px; line-height: 1.6; color: var(--text-faint); }
+
+/* ---------- 工作流折叠态 ---------- */
+/* 摆放完成或手动收起时，导航轨收为窄条，仅保留阶段编号，释放水平视野。
+   顶栏 #rail-toggle 始终可见，可随时展开。
+   实现方式：折叠时由 JS 在 domRoot 上改写 --rail-w 为窄值，
+   所有引用 var(--rail-w) 的元素（导航轨宽度 / 提示条左移 / 工具坞左移）自动跟随。 */
+#stepper.collapsed .rail-head,
+#stepper.collapsed .rail-item .txt,
+#stepper.collapsed .rail-foot { display: none; }
+#stepper.collapsed .rail-item { justify-content: center; padding: 11px 0; }
+#stepper.collapsed .rail-item .idx { font-size: 13px; }
+
+.rail-toggle {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px;
+  background: rgba(34, 211, 238, 0.1);
+  border: 1px solid var(--accent-line);
+  color: var(--accent);
+}
+.rail-toggle:hover { background: rgba(34, 211, 238, 0.2); color: #fff; }
+.rt-icon {
+  width: 14px; height: 14px; flex: none;
+  border: 1.5px solid currentColor; border-radius: 3px;
+  position: relative;
+}
+/* 图标内竖线 = 已展开（点击收起）；折叠态转为横线 */
+.rt-icon::before {
+  content: ""; position: absolute; top: 2px; bottom: 2px; left: 3px;
+  width: 1.5px; background: currentColor;
+}
+.rail-toggle.collapsed .rt-icon::before { left: 2px; right: 2px; top: 6px; bottom: auto; width: auto; height: 1.5px; }
+
+/* ---------- 右侧检查器 ---------- */
+.inspector {
+  position: fixed; top: calc(var(--topbar-h) + 12px); right: 12px;
+  width: var(--insp-w);
+  /* 底部详情工具条是 fixed 浮层，会压住面板尾部内容；再减去实测让位高度保证互不遮挡 */
+  max-height: calc(100% - var(--topbar-h) - var(--status-h) - 24px - var(--detailbar-reserve));
+  display: flex; flex-direction: column; gap: 11px;
+  padding: 15px;
+  overflow-y: auto;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  z-index: 18;
+}
+.insp-head { display: flex; align-items: center; justify-content: space-between; padding-bottom: 10px; border-bottom: 1px solid rgba(255, 255, 255, 0.08); }
+.insp-title { font-size: 13px; font-weight: 600; color: var(--accent); }
+.insp-close { padding: 2px 8px; font-size: 16px; line-height: 1; background: transparent; border: none; color: var(--text-dim); }
+.insp-close:hover { color: var(--bad); background: transparent; }
+
+/* 设备信息行 */
+#info-body .row { display: flex; justify-content: space-between; gap: 10px; padding: 6px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); }
+#info-body .row > span { color: var(--text-dim); font-size: 11px; }
+#info-body .row > b { font-weight: 500; font-variant-numeric: tabular-nums; }
+#info-body .row > b.st-normal { color: var(--ok); }
+#info-body .row > b.st-warning { color: var(--warn); }
+#info-body .row > b.st-fault { color: var(--bad); }
+
+/* 已上架设备清单（只读展示，随所选机柜动态刷新） */
+#info-body .dev-head {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-top: 12px; padding-bottom: 6px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  font-size: 12px; color: var(--accent);
+}
+#info-body .dev-head b { color: var(--text); font-weight: 600; font-variant-numeric: tabular-nums; }
+#info-body .dev-list { max-height: 200px; overflow-y: auto; }
+#info-body .dev-list::-webkit-scrollbar { width: 5px; }
+#info-body .dev-list::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.3); border-radius: 3px; }
+#info-body .dev-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 0; border-bottom: 1px solid rgba(255, 255, 255, 0.04); font-size: 11px;
+}
+#info-body .dev-u { flex: 0 0 36px; color: var(--text-faint); font-variant-numeric: tabular-nums; }
+#info-body .dev-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+#info-body .dev-st { flex: 0 0 auto; font-size: 10.5px; }
+#info-body .dev-st.st-online { color: var(--ok); }
+#info-body .dev-st.st-neutral { color: var(--text-dim); }
+#info-body .dev-st.st-warning { color: var(--warn); }
+#info-body .dev-st.st-alert, #info-body .dev-st.st-offline { color: var(--bad); }
+#info-body .dev-empty { padding: 8px 0; font-size: 11px; color: var(--text-faint); }
+
+/* 多选聚合面板：批量操作按钮 + 快捷键提示（单柜面板无此区，操作走键盘） */
+#info-body .multi-acts { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; margin-top: 12px; }
+#info-body .multi-acts button { width: 100%; }
+#info-body .multi-hint { margin-top: 8px; font-size: 10.5px; line-height: 1.5; color: var(--text-faint); }
+
+/* 门窗面板 */
+.wp-dims { display: grid; grid-template-columns: repeat(3, 1fr); gap: 7px; }
+#wall-canvas { width: 100%; aspect-ratio: 2.4; background: rgba(0, 0, 0, 0.34); border: 1px solid rgba(255, 255, 255, 0.07); border-radius: var(--r-md); overflow: hidden; }
+.wp-ops { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+.wp-props { display: grid; grid-template-columns: repeat(2, 1fr); gap: 7px; font-size: 11px; color: var(--text-dim); }
+.wp-props label { display: flex; align-items: center; gap: 5px; }
+.wp-props input { width: 100%; min-width: 0; padding: 4px 6px; }
+.wp-props b { color: var(--text); font-weight: 600; }
+/* wp-props 字段纵向排布（整改：横向时标签被下拉挤占至 ~29px，「防火等级」等被截断；
+   纵向排版后标签在上独占整行宽度、控件在下占满整行，任何断点均完整显示） */
+.wp-props label { flex-direction: column; align-items: stretch; gap: 3px; min-width: 0; }
+.wp-props label > span:not(.dcx) { flex: none; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-props label > .dcx { width: 100%; }
+/* 自绘下拉在 wp-props 内的紧凑变体：11px 字号 + 紧凑内边距（与 .wp-props input 对齐） */
+/* 自绘下拉在 wp-props 内的紧凑变体：11px 字号 + 紧凑内边距（与 .wp-props input 对齐）；
+   箭头位置同步收紧（伪元素方案，见 .dcx-trigger::after） */
+.wp-props .dcx-trigger { font-size: 11px; padding: 4px 24px 4px 6px; }
+.wp-props .dcx-trigger::after { right: 6px; }
+/* 增强失败时的原生兜底（正常情况下原生 select 已视觉隐藏） */
+.wp-props select { flex: 1 1 auto; width: 100%; min-width: 0; padding: 4px 24px 4px 6px; background-position: right 6px center; }
+/* 面板标题与空态提示占满整行 */
+.wp-props > b, .wp-props > .muted { grid-column: 1 / -1; }
+/* 门禁子模型：分组标题与复选框行为通栏整行（2 列网格中的独立语义行，避免与 select 行混排）；
+   复选框标签允许 ellipsis 截断，全称由 title 保留 */
+.wp-props .op-sec-t { grid-column: 1 / -1; color: var(--text-dim); font-size: 11px; font-weight: 600; letter-spacing: 1px; margin: 4px 0 2px; }
+.wp-props .op-chk { grid-column: 1 / -1; display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); cursor: pointer; }
+.wp-props .op-chk input { width: 14px; height: 14px; accent-color: var(--accent); flex: none; }
+.wp-props .op-chk span { flex: 0 1 auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+/* 说明文字块：与 .eng-note 同源，保持多行（合规信息不截断） */
+.wp-props .op-note { grid-column: 1 / -1; font-size: 10px; color: var(--text-dim); line-height: 1.4; margin-top: 4px; }
+#wp-status { padding: 7px 10px; border-radius: var(--r-sm); font-size: 11px; }
+#wp-status.ok { color: var(--ok); background: var(--dc-ok-soft, rgba(33, 208, 122, 0.1)); border: 1px solid var(--ok); }
+#wp-status.err { color: var(--bad); background: var(--dc-bad-soft, rgba(255, 59, 48, 0.1)); border: 1px solid var(--bad); }
+.wp-actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+
+/* ---------- 浮动工具坞 ---------- */
+.dock {
+  position: fixed; left: calc(var(--rail-w) + 16px); bottom: calc(var(--status-h) + 16px);
+  min-width: 320px; max-width: 460px;
+  display: flex; flex-direction: column; gap: 11px;
+  padding: 15px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: var(--r-lg);
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  z-index: 18;
+}
+.dock-title { font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-faint); }
+.dock-body { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.dock-body .field { flex: 1 1 96px; }
+.dock-body .equip { flex: 1 1 auto; }
+.dock-hint { font-size: 10.5px; color: var(--text-faint); padding-top: 9px; border-top: 1px solid rgba(255, 255, 255, 0.06); }
+.dock-split { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; }
+.dock-sub { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-faint); }
+
+/* ---------- 阶段提示 ---------- */
+#stage-hint {
+  position: fixed; top: calc(var(--topbar-h) + 14px); left: calc(var(--rail-w) + 16px);
+  max-width: 440px;
+  padding: 9px 15px;
+  background: rgba(6, 14, 26, 0.9);
+  border: 1px solid var(--accent-line);
+  border-left: 2px solid var(--accent);
+  border-radius: var(--r-md);
+  color: #eaf7ff;
+  font-size: 12px;
+  backdrop-filter: blur(10px);
+  z-index: 12;
+}
+
+/* ---------- 机柜详情工具条 ---------- */
+.detail-bar {
+  position: fixed; bottom: calc(var(--status-h) + 16px); left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px;
+  flex-wrap: nowrap;                 /* 单行排列，禁止按钮/文字换行 */
+  white-space: nowrap;
+  max-width: calc(100vw - 24px);
+  padding: 10px 16px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 999px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  z-index: 19;
+}
+/* 子项不收缩、不换行：保证「返回机房 / 整排视图 / 视角切换」等按钮始终单行完整显示 */
+.detail-bar > * { flex: 0 0 auto; white-space: nowrap; }
+.detail-bar button { white-space: nowrap; }
+/* 检查器小屏适配：窄屏下左右撑满可用宽度，避免横向溢出/被裁切 */
+@media (max-width: 720px) {
+  .inspector { left: 12px; right: 12px; width: auto; }
+}
+/* 说明文字过长时在小屏隐藏，避免挤压导致按钮换行 */
+@media (max-width: 860px) {
+  .detail-bar .muted { display: none; }
+  /* 窄屏下按钮总宽仍超屏宽：产品要求禁止换行，故改为条内横向滚动，保证所有按钮可达 */
+  .detail-bar { gap: 8px; padding: 10px 12px; overflow-x: auto; scrollbar-width: none; }
+  .detail-bar::-webkit-scrollbar { display: none; }
+}
+.detail-bar b { font-size: 12.5px; color: var(--accent); }
+
+/* ---------- 底部状态条 ---------- */
+#statusbar {
+  position: fixed; left: 0; right: 0; bottom: 0; height: var(--status-h);
+  display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  padding: 0 16px;
+  background: rgba(8, 12, 20, 0.94);
+  border-top: 1px solid rgba(255, 255, 255, 0.07);
+  backdrop-filter: blur(14px);
+  z-index: 20;
+}
+#stats { font-size: 11px; color: var(--accent); font-variant-numeric: tabular-nums; letter-spacing: 0.3px; }
+#help { display: flex; gap: 14px; align-items: center; font-size: 10.5px; color: var(--text-faint); }
+
+/* ---------- 悬浮提示 / 吐司 ---------- */
+#tooltip {
+  position: fixed; z-index: 30; display: none; pointer-events: none;
+  padding: 5px 10px;
+  background: rgba(8, 12, 20, 0.95);
+  border: 1px solid var(--accent-line);
+  border-radius: var(--r-sm);
+  font-size: 11.5px; color: var(--text);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.5);
+}
+#tooltip.show { display: block; }
+
+#toast {
+  position: fixed; top: calc(var(--topbar-h) + 16px); left: 50%; transform: translate(-50%, -14px);
+  z-index: 40; opacity: 0; pointer-events: none;
+  padding: 9px 18px;
+  background: rgba(8, 12, 20, 0.95);
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  font-size: 12px; color: var(--accent);
+  transition: opacity 0.22s, transform 0.22s;
+}
+/* 多行提示（如阶段④闸门的错误清单）：保留换行、左对齐、放宽圆角与宽度上限。
+   默认仍是单行胶囊样式（white-space:nowrap 之外的既有观感不变）。 */
+#toast.multiline {
+  white-space: pre-line;
+  text-align: left;
+  border-radius: var(--r-md);
+  max-width: min(560px, 86vw);
+  line-height: 1.55;
+}
+#toast.show { opacity: 1; transform: translate(-50%, 0); }
+#toast.toast-error { border-color: rgba(255, 59, 48, 0.55); color: #ffb3ae; }
+#toast.toast-warn { border-color: rgba(255, 176, 0, 0.5); color: #ffd98a; }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 7px; height: 7px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.36); }
+/* ---------- 人物第一人称控件条 ---------- */
+/* 进入第一视角后显示；absolute 定位（Shadow DOM 内经 adaptCssForShadow 兼容） */
+#fps-bar {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  z-index: 25;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  background: rgba(8, 16, 30, 0.82);
+  border: 1px solid rgba(34, 211, 238, 0.35);
+  border-radius: 12px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  pointer-events: auto;
+  user-select: none;
+  -webkit-user-select: none;
+}
+#fps-bar.hidden { display: none !important; }
+#fps-bar button {
+  background: rgba(34, 211, 238, 0.1);
+  color: #cfe8ff;
+  border: 1px solid rgba(34, 211, 238, 0.4);
+  border-radius: 8px;
+  padding: 7px 14px;
+  font-size: 13px;
+  cursor: pointer;
+  white-space: nowrap;
+  touch-action: none;
+  transition: background 0.12s ease;
+}
+#fps-bar button:hover { background: rgba(34, 211, 238, 0.22); color: #e6f4ff; }
+#fps-bar button:active { background: rgba(34, 211, 238, 0.35); }
+#fps-bar #fps-exit {
+  background: rgba(255, 59, 48, 0.14);
+  border-color: rgba(255, 59, 48, 0.45);
+  color: #ff9a94;
+}
+#fps-bar #fps-exit:hover { background: rgba(255, 59, 48, 0.3); color: #fff; }
+#fps-bar .fps-hint { color: #7fb3d8; font-size: 12px; margin: 0 4px; white-space: nowrap; }
+/* 灵敏度滑杆包裹：标签 + range + 数值 */
+#fps-bar .fps-look-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: #cfe8ff;
+  font-size: 12px;
+  white-space: nowrap;
+}
+#fps-bar .fps-look-wrap label { cursor: default; }
+#fps-bar .fps-look-wrap input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 110px;
+  height: 4px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, rgba(34, 211, 238, 0.6), rgba(34, 211, 238, 0.2));
+  outline: none;
+  cursor: pointer;
+}
+#fps-bar .fps-look-wrap input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #22d3ee;
+  border: 2px solid #e6f4ff;
+  box-shadow: 0 0 6px rgba(34, 211, 238, 0.7);
+}
+#fps-bar .fps-look-wrap input[type="range"]::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #22d3ee;
+  border: 2px solid #e6f4ff;
+}
+#fps-bar .fps-look-wrap #fps-look-val {
+  display: inline-block;
+  min-width: 26px;
+  text-align: right;
+  color: #7df9ff;
+  font-variant-numeric: tabular-nums;
+}
+/* 指针锁定提示（短暂提示「已锁定」） */
+#fps-bar .fps-lock-hint {
+  color: #7df9ff;
+  font-size: 12px;
+  margin: 0 4px;
+  white-space: nowrap;
+}
+
+/* ---------- 墙面编辑器 SVG 样式（此前缺失：rect 默认黑填充致画布全黑、文字看不清） ---------- */
+#wall-canvas svg { display: block; width: 100%; height: 100%; }
+#wall-canvas .wall-rect { fill: rgba(23, 38, 56, 0.92); stroke: rgba(34, 211, 238, 0.55); stroke-width: 1.5; }
+#wall-canvas .grid { stroke: rgba(34, 211, 238, 0.14); stroke-width: 1; }
+#wall-canvas .op-body { fill: rgba(34, 211, 238, 0.16); stroke: #22d3ee; stroke-width: 1.2; }
+#wall-canvas .op-body.door { fill: rgba(255, 176, 0, 0.22); stroke: var(--warn); }
+#wall-canvas .op-body.window { fill: rgba(125, 249, 255, 0.18); stroke: #7df9ff; }
+#wall-canvas .op-body.sel { stroke: #ffdf6b; stroke-width: 2; }
+#wall-canvas .op-label { fill: #eaf7ff; font-size: 11px; text-anchor: middle; }
+#wall-canvas .handle { fill: #ffdf6b; stroke: #102030; stroke-width: 1.5; cursor: pointer; }
+#wall-canvas .dim { fill: #9fc3e0; font-size: 11px; text-anchor: middle; }
+
+/* ---------- 工程配置面板（整改：五域量化入口） ---------- */
+#eng-panel { bottom: calc(var(--status-h) + 250px); max-height: calc(100vh - var(--topbar-h) - 270px); }
+#eng-panel .eng-scroll { max-height: calc(100vh - 340px); overflow-y: auto; padding-right: 4px; }
+#eng-panel .eng-warn {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--warn); margin-left: 8px; vertical-align: middle;
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+}
+#eng-panel .eng-warn.ok { background: var(--ok); box-shadow: 0 0 8px rgba(33, 208, 122, 0.5); }
+#eng-panel .eng-warn.error { background: var(--bad); box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
+#eng-panel .eng-sec { border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px; margin-top: 8px; }
+#eng-panel .eng-sec:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+#eng-panel .eng-sec-t { color: #7fb3d8; font-size: 11px; font-weight: 600; margin-bottom: 6px; letter-spacing: 1px; }
+#eng-panel .eng-calc {
+  font-size: 11px; color: #9fd8ff; background: rgba(34, 211, 238, 0.07);
+  border: 1px solid rgba(34, 211, 238, 0.18); border-radius: 6px;
+  padding: 6px 8px; margin-top: 6px; line-height: 1.5;
+}
+#eng-panel .eng-note { font-size: 10px; color: #6f87a3; margin-top: 5px; line-height: 1.4; }
+#eng-panel .eng-chk { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text); margin: 5px 0; cursor: pointer; }
+#eng-panel .eng-chk input { width: 14px; height: 14px; accent-color: var(--accent); }
+#eng-panel .eng-mini { width: 100%; }
+#eng-panel select { width: 100%; min-width: 0; }
+#eng-panel .eng-aux-area { margin-top: 6px; }
+#eng-panel select, #eng-panel input[type="text"], #eng-panel input[type="number"] { font-size: 12px; }
+
+/* ---------- 字段控件等宽对齐（整改：控件宽曾随「每行字段数」与「标签/单位长度」
+   变化，同面板内输入框/下拉框长短不齐、标签被挤成省略号） ----------
+   机制：
+     ① .eng-sec 是 .dock-body 的 flex 项，原按各自 max-content 定宽 → 显式撑满；
+     ② 段容器改单列网格接管纵向节奏（行距 --ctl-pad-y，子元素原 margin 归零）；
+     ③ 字段内部三列网格：标签列定宽 64（实测最长标签 55px）、控件列 minmax(0,1fr)、
+        单位列定宽 44（实测最长单位 Mbps/路 42.77px）。定宽列不折叠——无单位字段
+        （select/文本）与有单位字段控件等宽，单位文本左缘成列；
+     ④ 区间型字段（两个 .eng-mini 夹一个 ~）五列网格，两个 mini 等分。
+   规则限定 #eng-panel / #aux-panel，不波及 plan-tools / wp-dims 的同名 .field 用法；
+   标签 span 的既有 :not(.dcx) 排除（自绘下拉包裹层）保持不变。 */
+.dock-body > .eng-sec { flex: 1 1 100%; min-width: 0; }
+#eng-panel .eng-sec,
+#aux-panel .eng-sec,
+#aux-panel .eng-aux { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ctl-pad-y); }
+/* 面积/电池室荷载两个数值字段改两列并排：单列时控件被拉至 ~306px，对「面积/荷载」
+   这类小数字输入过宽（用户反馈）；两列后每控件 ~86px，保持等宽且面板更紧凑 */
+#aux-panel .eng-aux { grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 14px; }
+/* 复选框行通栏（两列网格中独立语义行，避免掉进单列） */
+#aux-panel .eng-aux > .eng-chk { grid-column: 1 / -1; }
+#eng-panel .eng-sec > *,
+#aux-panel .eng-sec > *,
+#aux-panel .eng-aux > * { margin-top: 0; margin-bottom: 0; }
+#eng-panel .eng-sec .field,
+#aux-panel .eng-sec .field {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 7px;
+}
+#eng-panel .eng-sec .field:has(> .eng-mini),
+#aux-panel .eng-sec .field:has(> .eng-mini) {
+  grid-template-columns: 64px minmax(0, 1fr) auto minmax(0, 1fr) 44px;
+}
+
+/* ---------- 辅助区登记可收折（整改：常驻显示遮挡 3D 视图） ----------
+   标题条常驻作折叠态把手；主体与提示收入 .aux-fold，以 max-height/opacity 过渡。
+   收起后面板缩为标题条（min-width 归零、padding 收紧），3D 机房显示区域基本完全释放。
+   默认状态：宽屏展开、窄屏（≤720，JS matchMedia 判断）收起；用户选择记忆
+   localStorage（dc3d.auxCollapsed）。z-index 19 高于 wall-panel(18)：保证窄屏
+   （inspector 全宽）下收起态的展开按钮不被压住。 */
+#aux-panel { z-index: 19; transition: gap 0.18s ease, padding 0.18s ease; }
+#aux-panel .dock-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#aux-panel .dock-collapse-btn {
+  flex: none; white-space: nowrap;
+  font-size: 12px; line-height: 1.2;
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--n-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+#aux-panel .dock-collapse-btn:hover { border-color: var(--accent-line); color: var(--text-strong); }
+#aux-panel .aux-fold {
+  display: flex; flex-direction: column; gap: 11px;
+  overflow: hidden;
+  max-height: 80vh; opacity: 1;
+  transition: max-height 0.18s var(--dc-ease, ease), opacity 0.18s var(--dc-ease, ease);
+}
+#aux-panel.collapsed { min-width: 0; width: 168px; gap: 0; padding: 9px 12px; }
+#aux-panel.collapsed .aux-fold { max-height: 0; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  #aux-panel, #aux-panel .aux-fold, #aux-panel .dock-collapse-btn { transition: none; }
+}
+
+/* ---------- 机房尺寸可收折（整改：同源于辅助区登记，复用同一折叠模式） ----------
+   与 #aux-panel 行为完全一致：标题条常驻作折叠把手，主体与提示收入 .plan-fold，
+   以 max-height/opacity 过渡；收起后缩为 168px 定宽标题条，3D 机房显示区域基本释放。
+   默认宽屏展开 / 窄屏（≤720，JS matchMedia 判断）收起；选择记 localStorage
+   dc3d.planCollapsed。z-index 19 与 aux 同源防御：阶段①虽无 wall-panel，但顶部搜索
+   唤起的检查器层级较高，收起态按钮仍需置于其上方保证可达性。 */
+#plan-tools { z-index: 19; transition: gap 0.18s ease, padding 0.18s ease; }
+#plan-tools .dock-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#plan-tools .dock-collapse-btn {
+  flex: none; white-space: nowrap;
+  font-size: 12px; line-height: 1.2;
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--n-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+#plan-tools .dock-collapse-btn:hover { border-color: var(--accent-line); color: var(--text-strong); }
+#plan-tools .plan-fold {
+  display: flex; flex-direction: column; gap: 11px;
+  overflow: hidden;
+  max-height: 80vh; opacity: 1;
+  transition: max-height 0.18s var(--dc-ease, ease), opacity 0.18s var(--dc-ease, ease);
+}
+#plan-tools.collapsed { min-width: 0; width: 168px; gap: 0; padding: 9px 12px; }
+#plan-tools.collapsed .plan-fold { max-height: 0; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  #plan-tools, #plan-tools .plan-fold, #plan-tools .dock-collapse-btn { transition: none; }
+}
+
+/* ---------- 静电地板 / 桥架铺设参数菜单（可收折 + 与阶段坞互斥） ----------
+   同源于辅助区登记折叠范式：标题条常驻作折叠把手，主体收入 .floor-fold /
+   .bridge-fold，以 max-height/opacity 过渡；收起后缩为 168px 定宽标题条，
+   3D 机房显示区域基本释放。默认宽屏展开 / 窄屏（≤720，JS matchMedia 判断）
+   收起；选择记忆 localStorage（dc3d.floorCollapsed / dc3d.bridgeCollapsed）。
+   z-index 19 与 aux/plan 同源防御。两个菜单坞互斥且打开时让位阶段坞
+   （main.js _syncMenuDock），不会同锚点叠放。 */
+#floor-panel, #bridge-panel, #bridge-draw { z-index: 19; transition: gap 0.18s ease, padding 0.18s ease; }
+#floor-panel .dock-head, #bridge-panel .dock-head, #bridge-draw .dock-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+#floor-panel .dock-collapse-btn, #bridge-panel .dock-collapse-btn, #bridge-draw .dock-collapse-btn {
+  flex: none; white-space: nowrap;
+  font-size: 12px; line-height: 1.2;
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--n-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--r-sm);
+  color: var(--text);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+#floor-panel .dock-collapse-btn:hover, #bridge-panel .dock-collapse-btn:hover, #bridge-draw .dock-collapse-btn:hover { border-color: var(--accent-line); color: var(--text-strong); }
+#floor-panel .floor-fold, #bridge-panel .bridge-fold, #bridge-draw .bridge-fold {
+  display: flex; flex-direction: column; gap: 11px;
+  overflow: hidden;
+  max-height: 80vh; opacity: 1;
+  transition: max-height 0.18s var(--dc-ease, ease), opacity 0.18s var(--dc-ease, ease);
+}
+#floor-panel.collapsed, #bridge-panel.collapsed, #bridge-draw.collapsed { min-width: 0; width: 168px; gap: 0; padding: 9px 12px; }
+#floor-panel.collapsed .floor-fold, #bridge-panel.collapsed .bridge-fold, #bridge-draw.collapsed .bridge-fold { max-height: 0; opacity: 0; }
+@media (prefers-reduced-motion: reduce) {
+  #floor-panel, #bridge-panel, #bridge-draw, #floor-panel .floor-fold, #bridge-panel .bridge-fold, #bridge-draw .bridge-fold,
+  #floor-panel .dock-collapse-btn, #bridge-panel .dock-collapse-btn, #bridge-draw .dock-collapse-btn { transition: none; }
+}
+
+/* ---------- 桥架手绘布线面板（bridgeDrawPanel.js 驱动） ---------- */
+#bridge-draw .bd-row { display: flex; align-items: center; gap: 8px; }
+#bridge-draw .bd-lbl { font-size: 12px; color: var(--text); white-space: nowrap; }
+#bridge-draw .bd-kind-tag { margin-left: 6px; font-size: 10px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent-line, #22d3ee); }
+#bridge-draw .bd-sub { font-size: 10px; letter-spacing: 1.2px; text-transform: uppercase; color: var(--text-faint); width: 100%; }
+#bridge-draw .bd-list { width: 100%; margin: 4px 0 0; padding-left: 18px; max-height: 120px; overflow-y: auto; font-size: 11.5px; color: var(--text); }
+#bridge-draw .bd-list li { line-height: 1.5; }
+#bridge-draw .bd-saved-item { display: flex; align-items: center; justify-content: space-between; gap: 8px; list-style: none; margin-left: -18px; padding: 3px 0; border-top: 1px solid rgba(255, 255, 255, 0.05); }
+#bridge-draw .bd-del { flex: none; font-size: 11px; padding: 2px 8px; border: 1px solid rgba(255, 255, 255, 0.12); border-radius: var(--r-sm); background: rgba(255, 255, 255, 0.05); color: var(--text); cursor: pointer; }
+#bridge-draw .bd-del:hover { border-color: var(--bad); color: var(--bad); }
+#bridge-draw button.primary { background: var(--accent-dim, rgba(34, 211, 238, 0.2)); border-color: var(--accent-line, #22d3ee); }
+#bridge-draw button.danger { color: var(--bad); border-color: rgba(255, 59, 48, 0.4); }
+
+/* 菜单坞头部按钮组（收起 + 关闭） */
+.dock-head-btns { display: flex; align-items: center; gap: 6px; flex: none; }
+.dock-close-btn {
+  flex: none; width: 24px; height: 24px; padding: 0;
+  font-size: 14px; line-height: 1;
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.06));
+  border: 1px solid var(--n-border, rgba(255, 255, 255, 0.1));
+  border-radius: var(--r-sm);
+  color: var(--text-dim);
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+.dock-close-btn:hover { border-color: var(--bad); color: var(--bad); }
+
+/* ---------- 静电地板 / 桥架参数面板内部（字段网格同源于 #eng-panel） ---------- */
+#bridge-panel .eng-scroll { max-height: calc(100vh - 340px); overflow-y: auto; padding-right: 4px; }
+#bridge-panel .eng-warn, #floor-panel .eng-warn {
+  display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: var(--warn); margin-left: 8px; vertical-align: middle;
+  box-shadow: 0 0 8px rgba(255, 176, 0, 0.6);
+}
+#bridge-panel .eng-warn.ok, #floor-panel .eng-warn.ok { background: var(--ok); box-shadow: 0 0 8px rgba(33, 208, 122, 0.5); }
+#bridge-panel .eng-warn.error, #floor-panel .eng-warn.error { background: var(--bad); box-shadow: 0 0 8px rgba(255, 59, 48, 0.6); }
+#bridge-panel .eng-sec, #floor-panel .eng-sec { border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 8px; margin-top: 8px; }
+#bridge-panel .eng-sec:first-child, #floor-panel .eng-sec:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+#bridge-panel .eng-sec-t, #floor-panel .eng-sec-t {
+  display: flex; align-items: center; gap: 0;
+  color: #7fb3d8; font-size: 11px; font-weight: 600; margin-bottom: 6px; letter-spacing: 1px;
+}
+#bridge-panel .eng-sec, #floor-panel .eng-sec { display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--ctl-pad-y); }
+#bridge-panel .eng-sec > *, #floor-panel .eng-sec > * { margin-top: 0; margin-bottom: 0; }
+#bridge-panel .eng-sec .field, #floor-panel .eng-sec .field {
+  display: grid;
+  grid-template-columns: 64px minmax(0, 1fr) 44px;
+  align-items: center;
+  gap: 7px;
+}
+/* 桥架类色点 + 显隐标签 */
+.bp-dot { width: 9px; height: 9px; border-radius: 2px; display: inline-block; margin-right: 6px; flex: none; }
+.bp-dot[data-kind="weak"] { background: #38bdf8; }
+.bp-dot[data-kind="strong"] { background: #f59e0b; }
+.bp-dot[data-kind="ground"] { background: #34d399; }
+.bp-dot[data-kind="fire"] { background: #a3e635; }
+.bp-vis { margin-left: auto; font-size: 10px; color: var(--text-faint); flex: none; }
+.bp-vis.on { color: var(--accent); }
+/* 桥架层编辑行（每层高度/宽度两个字段并排） */
+.bp-layer { display: flex; flex-wrap: wrap; gap: 8px; }
+.bp-layer .field { flex: 1 1 130px; }
+/* 错误汇总 + 字段级红字 */
+.bp-err-sum { font-size: 11px; color: var(--bad); line-height: 1.45; min-height: 14px; }
+.bp-err-item, .fp-err-item { color: var(--bad); font-size: 10.5px; line-height: 1.45; }
+.bp-kind-err { margin: 0; }
+.eng-sec.has-err > .eng-sec-t { color: var(--bad); }
+#bridge-panel .field.has-err > input, #floor-panel .field.has-err > input { border-color: var(--bad); }
+/* 静电地板面板：字段级红字通栏 + 派生信息行 */
+#floor-panel .fp-field-err { grid-column: 1 / -1; }
+#floor-panel .fp-info { font-size: 10.5px; color: var(--text-dim); line-height: 1.5; }
+
+/* ---------- 菜单结构优化（v1.5.0：5 步建造逻辑 / 五域 Tab / 设备分组 / 联检面板 / 齿轮） ---------- */
+/* 工程配置五域 Tab（步骤③） */
+#eng-panel .eng-tabs { display: flex; flex-wrap: wrap; gap: 4px; padding: 8px 15px 0; }
+#eng-panel .eng-tabs button {
+  background: rgba(34, 211, 238, 0.07); color: #9fd8ff;
+  border: 1px solid rgba(34, 211, 238, 0.22); border-radius: 7px;
+  padding: 5px 10px; font-size: 12px; cursor: pointer; transition: all 0.12s ease;
+}
+#eng-panel .eng-tabs button:hover { background: rgba(34, 211, 238, 0.16); }
+#eng-panel .eng-tabs button.active { background: rgba(34, 211, 238, 0.26); color: #eaf7ff; border-color: #22d3ee; }
+
+/* 设备栏业务域分组（步骤④） */
+#equip-tools .equip-group { border-top: 1px solid rgba(255, 255, 255, 0.06); padding-top: 7px; margin-top: 7px; }
+#equip-tools .equip-group:first-of-type { border-top: none; margin-top: 0; padding-top: 0; }
+#equip-tools .equip-group-t { color: #7fb3d8; font-size: 10px; font-weight: 600; letter-spacing: 1px; margin-bottom: 5px; }
+#equip-tools .equip-group .equip { width: calc(50% - 4px); display: inline-flex; margin: 0 2px 4px 0; }
+
+/* 校验联检面板（步骤⑤） */
+#validate-panel .val-sum { font-size: 11px; color: #9fd8ff; margin-bottom: 8px; }
+#validate-panel .val-row {
+  display: flex; align-items: flex-start; gap: 7px;
+  background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.06);
+  border-left-width: 3px; border-radius: 7px; padding: 7px 9px; margin-bottom: 6px;
+  font-size: 11px; cursor: pointer; transition: background 0.12s ease;
+}
+#validate-panel .val-row:hover { background: rgba(34, 211, 238, 0.1); }
+#validate-panel .val-row.val-err { border-left-color: var(--bad); }
+#validate-panel .val-row.val-warn { border-left-color: var(--warn); }
+#validate-panel .val-row.val-info { border-left-color: var(--accent); }
+#validate-panel .val-row .val-tag { flex: none; }
+#validate-panel .val-row .val-code { flex: none; color: #7fb3d8; font-family: monospace; }
+#validate-panel .val-row .val-msg { color: #cfe8ff; line-height: 1.45; }
+
+/* 顶栏显示设置齿轮（渲染偏好收纳） */
+#topbar .gear-wrap { position: relative; display: inline-flex; }
+#topbar #tb-gear { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 7px; color: #cfe8ff; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+#topbar #tb-gear:hover { background: rgba(34, 211, 238, 0.14); }
+#topbar .gear-pop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 40;
+  min-width: 220px; padding: 12px;
+  background: rgba(8, 16, 30, 0.96); border: 1px solid rgba(34, 211, 238, 0.3);
+  border-radius: 10px; box-shadow: 0 8px 28px rgba(0, 0, 0, 0.5);
+  display: flex; flex-direction: column; gap: 10px;
+}
+#topbar .gear-pop.hidden { display: none !important; }
+#topbar .gear-pop .cmd-label { color: #7fb3d8; font-size: 10px; }
+#topbar .gear-pop .seg { width: 100%; }
+#topbar .gear-pop .seg button { flex: 1; padding: 6px 4px; font-size: 12px; }
+#topbar #tb-save, #topbar #tb-export { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 7px; color: #cfe8ff; padding: 6px 12px; font-size: 12px; cursor: pointer; white-space: nowrap; }
+#topbar #tb-save:hover, #topbar #tb-export:hover { background: rgba(34, 211, 238, 0.14); }
+/* 撤销 / 重做：图标按钮，与保存/导出同组同高度；禁用态用 opacity 而非
+   换色，避免与「锁定」语义色混淆。 */
+#topbar #tb-undo, #topbar #tb-redo { background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 7px; color: #cfe8ff; padding: 6px 9px; font-size: 14px; line-height: 1; cursor: pointer; }
+#topbar #tb-undo:hover:not(:disabled), #topbar #tb-redo:hover:not(:disabled) { background: rgba(34, 211, 238, 0.14); }
+#topbar #tb-undo:disabled, #topbar #tb-redo:disabled { opacity: 0.32; cursor: default; }
+
+/* ===========================================================================
+   主题适配与组件状态补丁（2026-10-23 · 两页视觉统一）
+   ---------------------------------------------------------------------------
+   ① 历史规则里写死的浅蓝 / 纯白文本（#fff / #eaf7ff / #cfe8ff / #7fb3d8 …）
+      在亮色主题下会变成「浅字压浅底」。这里按同选择器重写为设计令牌
+      （同特异性 + 位于文件末尾 = 生效），不改动上方既有结构。
+   ② 补齐按钮 / 输入框的「悬停 / 按下 / 选中 / 禁用 / 加载」与最小点击区（≥30px）。
+   ③ 确认弹窗（confirmDialog.js）样式，取代原生 window.confirm。
+   =========================================================================== */
+
+/* ---------- ① 亮色主题安全色 ---------- */
+button:hover:not(:disabled) {
+  color: var(--text-strong);
+  background: var(--dc-surface-item-hover, rgba(34, 211, 238, 0.1));
+}
+.rail-item.active .txt { color: var(--text-strong); }
+.rail-toggle:hover { color: var(--text-strong); }
+#stage-hint { color: var(--text-strong); }
+#fps-bar button { color: var(--text); }
+#fps-bar button:hover { color: var(--text-strong); }
+#fps-bar #fps-exit:hover { color: var(--text-strong); }
+#fps-bar .fps-hint { color: var(--text-dim); }
+#wall-canvas .op-label { fill: var(--text-strong); }
+#eng-panel .eng-sec-t { color: var(--text-dim); }
+#eng-panel .eng-note { color: var(--text-dim); }
+#eng-panel .eng-calc { color: var(--text); border-color: var(--accent-line); }
+#eng-panel .eng-tabs button.active { color: var(--text-strong); border-color: var(--accent); }
+#equip-tools .equip-group-t { color: var(--text-dim); }
+#validate-panel .val-sum { color: var(--text); }
+#validate-panel .val-row .val-code { color: var(--text-dim); }
+#validate-panel .val-row .val-msg { color: var(--text); }
+#topbar #tb-gear,
+#topbar #tb-save,
+#topbar #tb-export,
+#topbar #tb-undo,
+#topbar #tb-redo {
+  color: var(--text);
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.05));
+  border-color: var(--n-border, rgba(255, 255, 255, 0.1));
+}
+#topbar .gear-pop .cmd-label { color: var(--text-dim); }
+
+/* 面板与栏体：底色 / 描边统一走令牌（深色玻璃 / 亮色玻璃） */
+#topbar { background: linear-gradient(180deg, var(--dc-surface-strong, rgba(8, 12, 20, 0.96)), var(--dc-surface-soft, rgba(8, 12, 20, 0.82))); border-bottom-color: var(--n-border, rgba(255, 255, 255, 0.07)); }
+#statusbar { background: var(--dc-surface-strong, rgba(8, 12, 20, 0.94)); border-top-color: var(--n-border, rgba(255, 255, 255, 0.07)); }
+#stepper { background: linear-gradient(90deg, var(--dc-surface-strong, rgba(9, 13, 21, 0.94)), var(--dc-surface-soft, rgba(9, 13, 21, 0.78))); border-right-color: var(--n-border, rgba(255, 255, 255, 0.07)); }
+.inspector, .dock, .detail-bar { border-color: var(--n-border-strong, rgba(255, 255, 255, 0.09)); }
+
+/* ---------- ② 控件多态 + 最小点击区 ---------- */
+button { min-height: 30px; }
+button:disabled { opacity: 0.45; cursor: not-allowed; }
+button:active:not(:disabled) { background: var(--dc-surface-item-active, rgba(34, 211, 238, 0.22)); }
+input[type="text"], input[type="number"], select { min-height: 30px; }
+input:disabled, select:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* 加载态：保留占位宽度，中心转圈，避免文字抖动 */
+button.is-loading { position: relative; color: transparent !important; pointer-events: none; }
+button.is-loading::after {
+  content: "";
+  position: absolute; inset: 0; margin: auto;
+  width: 12px; height: 12px;
+  border: 2px solid var(--accent-dim);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: dc-btn-spin 0.8s linear infinite;
+}
+@keyframes dc-btn-spin { to { transform: rotate(360deg); } }
+
+/* 空数据提示（设备清单 / 校验结果等无数据时统一文案块） */
+.dc-empty {
+  padding: 10px 0;
+  color: var(--text-dim);
+  font-size: 11px;
+  text-align: center;
+}
+.dc-empty::before { content: "\2014 "; opacity: 0.6; }
+
+/* ---------- ③ 应用内确认弹窗（confirmDialog.js） ---------- */
+.dc-modal-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--dc-surface-soft, rgba(6, 9, 16, 0.55));
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+.dc-modal {
+  width: 100%;
+  max-width: 380px;
+  padding: 20px;
+  background: var(--dc-surface-strong, #0b1119);
+  border: 1px solid var(--n-border-strong, rgba(255, 255, 255, 0.12));
+  border-radius: var(--n-r-lg, 14px);
+  box-shadow: var(--n-shadow-lg, 0 12px 40px rgba(0, 0, 0, 0.55));
+}
+.dc-modal-title {
+  margin: 0 0 8px;
+  color: var(--text-strong);
+  font-size: 15px;
+  font-weight: 600;
+}
+.dc-modal.is-danger .dc-modal-title { color: var(--bad); }
+.dc-modal-msg {
+  margin: 0;
+  color: var(--text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dc-modal-detail {
+  margin: 8px 0 0;
+  padding: 8px 10px;
+  border-radius: var(--n-r-sm, 6px);
+  background: var(--dc-surface-item, rgba(255, 255, 255, 0.04));
+  color: var(--text-dim);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.dc-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+}
+.dc-modal-btn {
+  min-height: 30px;
+  padding: 0 16px;
+  border-radius: var(--n-r-sm, 6px);
+  border: 1px solid var(--n-border-strong, rgba(255, 255, 255, 0.14));
+  background: var(--dc-surface-control, rgba(255, 255, 255, 0.06));
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.14s, border-color 0.14s, color 0.14s;
+}
+.dc-modal-btn:hover { background: var(--dc-surface-item-hover, rgba(34, 211, 238, 0.12)); color: var(--text-strong); }
+.dc-modal-btn:active { background: var(--dc-surface-item-active, rgba(34, 211, 238, 0.2)); }
+.dc-modal-btn.is-primary { border-color: var(--accent-line); background: var(--accent-dim); color: var(--accent); font-weight: 500; }
+.dc-modal.is-danger .dc-modal-btn.is-primary { border-color: var(--bad); color: var(--bad); background: transparent; }
+.dc-modal.is-danger .dc-modal-btn.is-primary:hover { background: var(--bad); color: #fff; }
+
+/* ---------- ④ 响应式：窄屏收缩检查器与工具坞，避免互相压盖 ---------- */
+@media (max-width: 1280px) {
+  :root { --insp-w: 264px; }
+}
+@media (max-width: 1024px) {
+  :root { --insp-w: 240px; }
+  .dock { min-width: 280px; max-width: 360px; }
+  /* wp-props 窄屏单列：≤1024 时 2 列单元格仅 ~101px，下拉文本被裁至 1-2 字；
+     单列后每行 ~210px，选项文案完整可见（inspector 本有 overflow-y:auto） */
+  .wp-props { grid-template-columns: 1fr; }
+  /* aux 两字段窄屏回归单列：dock ≤360px 时两列单元格仅 ~150px，控件 ~35px 过窄 */
+  #aux-panel .eng-aux { grid-template-columns: minmax(0, 1fr); }
+}
+@media (prefers-reduced-motion: reduce) {
+  button.is-loading::after { animation-duration: 2s; }
+}
+
+/* ===========================================================================
+   演示增强浮层（demoFx.js）：引导 / 帮助 / 加载 / 性能 HUD
+   全部为覆盖在 3D 场景之上的轻量浮层，遵循 --accent 一族派生色，
+   与工具整体暗色玻璃拟态风格一致。
+   =========================================================================== */
+.fx-onboard, .fx-help {
+  position: fixed; inset: 0; z-index: 40;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(4, 8, 14, 0.62); backdrop-filter: blur(3px);
+}
+.fx-onboard-card, .fx-help-card {
+  width: min(420px, 86%); max-height: 80%; overflow-y: auto;
+  background: var(--surface, rgba(16, 24, 36, 0.92));
+  border: 1px solid var(--accent-line, rgba(34, 211, 238, 0.34));
+  border-radius: var(--r-lg, 14px); padding: 20px 22px;
+  color: var(--text, #dbe7f3); box-shadow: 0 12px 40px rgba(0, 0, 0, 0.5);
+}
+.fx-onboard-t, .fx-help-t {
+  font-size: 16px; font-weight: 700; color: var(--text-strong, #f1f5fb);
+  margin-bottom: 12px;
+}
+.fx-onboard-card ul { margin: 0; padding-left: 18px; line-height: 1.9; font-size: 13px; }
+.fx-onboard-card li b { color: var(--accent, #22d3ee); }
+.fx-help-grid { display: grid; grid-template-columns: auto 1fr; gap: 6px 14px; font-size: 13px; }
+.fx-help-grid span:nth-child(odd) {
+  color: var(--text-dim, #8ba0b5); font-weight: 600; white-space: nowrap;
+}
+.fx-help-grid span:nth-child(even) { color: var(--text, #dbe7f3); }
+.fx-onboard-ok, .fx-help-ok { margin-top: 16px; }
+
+/* 共享按钮（与工具风格一致：accent 描边） */
+.fx-onboard-ok.primary, .fx-help-ok.primary, .detail-bar #detail-export {
+  background: var(--accent-dim, rgba(34, 211, 238, 0.16));
+  border: 1px solid var(--accent-line, rgba(34, 211, 238, 0.34));
+  color: var(--text-strong, #f1f5fb); border-radius: var(--r-sm, 6px);
+  padding: 8px 16px; font-size: 13px; cursor: pointer;
+}
+.fx-onboard-ok.primary:hover, .fx-help-ok.primary:hover, .detail-bar #detail-export:hover {
+  background: var(--accent-line, rgba(34, 211, 238, 0.34));
+}
+
+/* 加载进度条 */
+.fx-loading {
+  position: fixed; inset: 0; z-index: 50;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--bg, #060910);
+}
+.fx-loading-card { width: min(360px, 80%); text-align: center; color: var(--text, #dbe7f3); }
+.fx-loading-t { font-size: 14px; margin-bottom: 12px; color: var(--text-dim, #8ba0b5); }
+.fx-loading-track {
+  height: 6px; border-radius: 999px; overflow: hidden;
+  background: rgba(255, 255, 255, 0.08);
+}
+.fx-loading-fill {
+  height: 100%; width: 0%; border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent, #22d3ee), #6ee7ff);
+  transition: width 0.25s ease;
+}
+
+/* 性能 HUD：右上角小条 */
+.fx-perfhud {
+  position: fixed; top: calc(var(--topbar-h, 56px) + 8px); right: 10px; z-index: 30;
+  padding: 5px 10px; font-size: 11px; line-height: 1.4; white-space: nowrap;
+  color: var(--text-dim, #8ba0b5);
+  background: var(--surface, rgba(16, 24, 36, 0.82));
+  border: 1px solid rgba(255, 255, 255, 0.08); border-radius: var(--r-sm, 6px);
+  pointer-events: none;
+}

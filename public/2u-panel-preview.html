@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>2U 面板设计（防火墙/密码机 · 端口少）</title>
+<style>
+  body { background: #f4f4f2; font-family: "Microsoft YaHei", Arial, sans-serif; padding: 24px; }
+  h1 { font-size: 18px; color: #222; margin: 0 0 4px; }
+  .sub { font-size: 12px; color: #888; margin-bottom: 20px; }
+  .card { background: #fff; border-radius: 10px; padding: 16px 20px 18px; margin-bottom: 22px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+  .card h2 { font-size: 14px; color: #1a1a1a; margin: 0 0 2px; }
+  .card .desc { font-size: 12px; color: #777; margin-bottom: 10px; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<h1>2U 面板设计 · 防火墙 / 密码机（端口少）</h1>
+<div class="sub">端口样式与 1U 面板完全一致（RJ45 双 LED、SFP 金属框黑色通槽）；2U 高度下采用「上排电口 + 下排光口 + 右端管理区/风扇」排版，端口数量少、排版疏朗；每个品牌记录其品牌区样式。</div>
+
+<div id="app"></div>
+
+<script>
+// ============ 设计令牌（与 1U 一致） ============
+const RJ45_W = 10, RJ45_H = 8, RJ45_SPACING_X = 11.5
+const SFP_W = 11.5, SFP_H = 9, SFP_SPACING = 13.5
+const RACK_EAR_W = 7
+const PANEL_W = 402, PANEL_H = 72
+
+// ============ 品牌样式表（将被记录进项目文档/代码） ============
+const BRANDS = {
+  huawei:  { name: 'HUAWEI', model: 'USG6650E',        stripe: '#e60012', text: '#e60012', brandW: 70, type: 'NGFW',  accent: '#e60012' },
+  h3c:     { name: 'H3C',    model: 'SecPath F5060',    stripe: '#0088cc', text: '#0088cc', brandW: 66, type: 'NGFW',  accent: '#0088cc' },
+  ruijie:  { name: 'RUIJIE', model: 'RG-WALL 1600',     stripe: '#d92218', text: '#d92218', brandW: 66, type: 'NGFW',  accent: '#d92218' },
+  cisco:   { name: 'CISCO',  model: 'Firepower 4125',   stripe: '#1b9ee6', text: '#ffffff', brandW: 74, type: 'NGFW',  accent: '#1b9ee6' },
+}
+
+const NS = 'http://www.w3.org/2000/svg'
+function el(tag, attrs) { const e = document.createElementNS(NS, tag); for (const k in attrs) e.setAttribute(k, attrs[k]); return e }
+function rect(x, y, w, h, fill, stroke, sw, rx) { const a = { x, y, width: w, height: h }; if (fill) a.fill = fill; if (stroke) a.stroke = stroke; if (sw) a['stroke-width'] = sw; if (rx) a.rx = rx; return el('rect', a) }
+function line(x1, y1, x2, y2, stroke, sw) { return el('line', { x1, y1, x2, y2, stroke, 'stroke-width': sw }) }
+function text(x, y, s, size, fill, weight, anchor) { const a = { x, y, 'font-size': size, fill, 'font-family': 'Arial, sans-serif' }; if (weight) a['font-weight'] = weight; if (anchor) a['text-anchor'] = anchor; const t = el('text', a); t.textContent = s; return t }
+function circle(cx, cy, r, fill, stroke, sw) { const a = { cx, cy, r, fill }; if (stroke) a.stroke = stroke; if (sw) a['stroke-width'] = sw; return el('circle', a) }
+
+// ============ 1U 端口样式（原样） ============
+function rj45(x, y, active) {
+  const g = el('g')
+  g.append(
+    rect(x, y, RJ45_W, RJ45_H, '#2a2a2a', '#0a0a0a', 0.3, 0.3),
+    rect(x + 1, y + 1, RJ45_W - 2, RJ45_H - 2.5, '#0a0a0a'),
+    rect(x + RJ45_W * 0.12, y + RJ45_H * 0.16, RJ45_W * 0.15, RJ45_H * 0.14, active ? '#00dd00' : '#1a1a1a', '#0a0a0a', 0.1, 0.2),
+    rect(x + RJ45_W * 0.73, y + RJ45_H * 0.16, RJ45_W * 0.15, RJ45_H * 0.14, active ? '#ffbb00' : '#1a1a1a', '#0a0a0a', 0.1, 0.2),
+  )
+  return g
+}
+function sfp(x, y, active) {
+  const g = el('g')
+  g.append(
+    rect(x, y, SFP_W, SFP_H, '#1a1a1a', '#333333', 0.5, 0.5),
+    rect(x + 0.8, y + SFP_H * 0.24, SFP_W - 1.6, SFP_H * 0.5, active ? '#181828' : '#0a0a0a', null, 0, 0.3),
+    line(x + 0.8, y + SFP_H * 0.24, x + SFP_W - 0.8, y + SFP_H * 0.24, '#0a0a0a', 0.3),
+    line(x + 0.8, y + SFP_H * 0.74, x + SFP_W - 0.8, y + SFP_H * 0.74, '#0a0a0a', 0.3),
+    rect(x + 1, y + SFP_H * 0.24, 0.9, SFP_H * 0.5, '#262626', null, 0, 0),
+    rect(x + SFP_W - 1.9, y + SFP_H * 0.24, 0.9, SFP_H * 0.5, '#262626', null, 0, 0),
+  )
+  return g
+}
+function led(x, y, color, label) {
+  const g = el('g')
+  g.append(circle(x, y, 1, color, '#0a0a0a', 0.15), circle(x, y, 1.7, color, null, 0, 0))
+  if (label) g.append(text(x, y + 3.5, label, 2.5, '#888', null, 'middle'))
+  return g
+}
+
+// ============ 2U 防火墙面板 ============
+// 布局：品牌区(左) | 管理区(电源/LED/Console/MGMT) | 上排 RJ45 | 下排 SFP | 右端风扇
+function firewallPanel(brand, rjCount, sfpCount) {
+  const b = BRANDS[brand]
+  const svg = el('svg', { viewBox: `0 0 ${PANEL_W} ${PANEL_H}`, width: PANEL_W * 1.6, height: PANEL_H * 1.6, 'shape-rendering': 'crispEdges' })
+  // 外框主体
+  svg.append(rect(0, 0, PANEL_W, PANEL_H, '#0f0f0f', b.stripe, 0.8, 0))
+  svg.append(rect(1, 1, PANEL_W - 2, PANEL_H - 2, '#1a1a1a', null, 0, 0))
+  // 挂耳（2U 4 孔）
+  svg.append(rect(0, 0, 7, PANEL_H, '#2a2a2a', '#111111', 0.5, 0))
+  svg.append(rect(PANEL_W - 7, 0, 7, PANEL_H, '#2a2a2a', '#111111', 0.5, 0))
+  ;[5, 19, 52, 66].forEach(y => { [1, PANEL_W - 1].forEach(cx => svg.append(rect(cx - 2, y - 2, 4, 4, '#3a3a3a', '#555555', 0.2, 0))) })
+  // 顶部品牌条（2U 横贯）
+  const bw = b.brandW
+  svg.append(rect(8, 3, bw, PANEL_H - 6, '#181818', '#2a2a2a', 0.3, 0))
+  svg.append(rect(8, 3, 1.5, PANEL_H - 6, b.stripe, null, 0, 0))
+  svg.append(text(8 + 3, 13, b.name, 7.5, b.text, 'bold'))
+  svg.append(text(8 + 3, 22, b.model, 4.5, '#ffffff'))
+  svg.append(text(8 + 3, PANEL_H - 4, b.name.toLowerCase() + ' ' + b.type, 3.5, '#666666'))
+  // 中部横分隔（2U）
+  svg.append(line(8 + bw + 4, 40, PANEL_W - 1, 40, '#252525', 0.3))
+
+  // 管理区（电源 + LED + MGMT/Console）
+  const mgmtX = 8 + bw + 6
+  svg.append(circle(mgmtX, 6, 2.8, '#1a1a1a', '#0a0a0a', 0.3))
+  svg.append(circle(mgmtX, 6, 1.8, '#22aa44', null, 0))
+  svg.append(led(mgmtX + 10, 6, '#22aa44', 'PWR'))
+  svg.append(led(mgmtX + 19, 6, '#22aa44', 'SYS'))
+  svg.append(led(mgmtX + 28, 6, '#22aa44', 'ALM'))
+  svg.append(led(mgmtX + 37, 6, '#22aa44', 'HA'))
+  // MGMT + Console（管理区下）
+  const mgmtY = 16
+  svg.append(rect(mgmtX + 2, mgmtY, RJ45_W, RJ45_H, '#2a2a2a', '#0a0a0a', 0.3, 0.3))
+  svg.append(rect(mgmtX + 3, mgmtY + 1, RJ45_W - 2, RJ45_H - 2.5, '#0a0a0a'))
+  svg.append(rect(mgmtX + RJ45_W * 0.12 + 2, mgmtY + RJ45_H * 0.16, RJ45_W * 0.15, RJ45_H * 0.14, '#00dd00', '#0a0a0a', 0.1, 0.2))
+  svg.append(rect(mgmtX + RJ45_W * 0.73 + 2, mgmtY + RJ45_H * 0.16, RJ45_W * 0.15, RJ45_H * 0.14, '#1a1a1a', '#0a0a0a', 0.1, 0.2))
+  svg.append(text(mgmtX + 2 + RJ45_W / 2, mgmtY - 2.5, 'MGMT', 2.4, '#6699cc', null, 'middle'))
+  svg.append(text(mgmtX + 2 + RJ45_W / 2, mgmtY + RJ45_H + 2.5, 'Console', 1.9, '#888', null, 'middle'))
+  // Console 口（旋转）
+  const conX = mgmtX + 20
+  svg.append(rect(conX, mgmtY, RJ45_W, RJ45_H, '#2a2a2a', '#0a0a0a', 0.3, 0.3))
+  svg.append(rect(conX + 1, mgmtY + 1, RJ45_W - 2, RJ45_H - 2.5, '#0a0a0a'))
+  svg.append(text(conX + RJ45_W / 2, mgmtY - 2.5, 'CON', 2.2, '#888', null, 'middle'))
+
+  // 上排 RJ45（业务口，居中）
+  const startX = 8 + bw + 48
+  const rjSpacing = RJ45_SPACING_X + 1.5
+  const rjX0 = startX + 6
+  for (let i = 0; i < rjCount; i++) {
+    const x = rjX0 + i * rjSpacing
+    const y = 14
+    svg.append(text(x + RJ45_W / 2, y - 5, String(i + 1), 2.6, '#c0c0c0', null, 'middle'))
+    svg.append(rj45(x, y, i % 3 === 0))
+  }
+  // 上排标签
+  svg.append(text(rjX0 + rjCount * rjSpacing / 2 - RJ45_W / 2, 30.5, 'GE', 2.6, '#a0a0a0', 'bold', 'middle'))
+
+  // 下排 SFP（光口，居中）
+  const sfpX0 = startX + 6
+  for (let i = 0; i < sfpCount; i++) {
+    const x = sfpX0 + i * SFP_SPACING
+    const y = 48
+    svg.append(text(x + SFP_W / 2, y - 5, String(i + 1), 2.4, '#a0a0a0', null, 'middle'))
+    svg.append(sfp(x, y, i % 2 === 0))
+  }
+  svg.append(text(sfpX0 + sfpCount * SFP_SPACING / 2 - SFP_W / 2, 64.5, 'SFP', 2.6, '#a0a0a0', 'bold', 'middle'))
+
+  // 右端风扇区（2U 防火墙 2 风扇）
+  const fanX = PANEL_W - RACK_EAR_W - 34
+  ;[0, 1].forEach(i => {
+    const fy = 12 + i * 30
+    svg.append(circle(fanX + 8, fy + 8, 8.5, '#0f0f0f', '#333', 0.5))
+    svg.append(circle(fanX + 8, fy + 8, 3, '#222', '#444', 0.3))
+    svg.append(line(fanX + 2, fy + 8, fanX + 14, fy + 8, '#333', 0.4))
+    svg.append(line(fanX + 8, fy + 2, fanX + 8, fy + 14, '#333', 0.4))
+  })
+  return svg
+}
+
+// ============ 渲染 ============
+const app = document.getElementById('app')
+const brands = [
+  { key: 'huawei', label: '华为 · 纵深防御', rj: 8, sfp: 4 },
+  { key: 'h3c', label: '华三 · 安全网关', rj: 6, sfp: 4 },
+  { key: 'ruijie', label: '锐捷 · 防火墙', rj: 8, sfp: 2 },
+  { key: 'cisco', label: '思科 · NGFW', rj: 4, sfp: 8 },
+]
+brands.forEach(bd => {
+  const card = document.createElement('div'); card.className = 'card'
+  const h = document.createElement('h2'); h.textContent = bd.label
+  const d = document.createElement('div'); d.className = 'desc'; d.textContent = '2U 面板：管理区（电源/LED/MGMT/Console）+ 上排电口 + 下排光口 + 右端风扇'
+  card.append(h, d, firewallPanel(bd.key, bd.rj, bd.sfp))
+  app.append(card)
+})
+</script>
+</body>
+</html>

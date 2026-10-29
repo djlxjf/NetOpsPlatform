@@ -1,0 +1,93 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+dist
+dist-ssr
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Build outputs / packaging artifacts (must NOT be versioned)
+release/
+release_*/      # 实际打包目录带后缀：release_build/release_hik/release_new/release_out/release_tdz/release_tdz2
+dist/
+dist_*/         # 旧/中间构建产物：dist_dc1/dist_m2~5/dist_measure 等
+.temp/
+android/
+base_apk_extracted/
+
+# Temp / junk files
+nul
+vitest.config.tmp.mjs
+*.timestamp-*.mjs
+
+# 整改归档 / 临时验证产物（P2-7-L）：根目录一次性验证脚本、截图等已迁移到 scripts/verify/
+/scripts/verify/
+_review_backup/
+_*.mjs
+_*.cjs
+_*.js
+_*.html
+_*.png
+_*.log
+_*.md
+_*.py
+_qa_extract/
+_qa_extract2/
+_review_recovery/
+
+# ===== GitHub 上线补充（安全前提）=====
+# 源码备份目录（与 src/ 重复，切勿入库）
+src.green-backup/
+
+# 环境变量 / 密钥（绝不入库；如需示例请保留 .env.example）
+.env
+.env.*
+!.env.example
+
+# 测试覆盖率报告
+coverage/
+.nyc_output/
+
+# 本地数据库与用户数据（运行时生成）
+*.db
+*.sqlite
+*.sqlite3
+userData/
+
+# WorkBuddy 内部项目数据（非产品源码，切勿入库）
+.workbuddy/
+
+# 临时日志
+scripts/rm-log.txt
+
+# ===== 开源仓库清理（2026-10-29 上线前）=====
+# 3D 子工程调试残留（无源码引用）：人物模型备份、动作截图、过程输出
+datacenter-3d/_removed_person/
+datacenter-3d/_shot_avatar_swap/
+datacenter-3d/_bw_crossovers.json
+datacenter-3d/a6out.txt
+# 备份文件
+*.bak
+# 本机绝对路径的一次性 electron-builder 配置（正式配置在 package.json.build）
+/eb.config.json
+/eb2.config.json
+/eb_dir.config.json
+/eb_fixed3.config.json
+/eb_fixed4.config.json

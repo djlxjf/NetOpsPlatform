@@ -1,0 +1,287 @@
+/* =============================================================================
+ * NetOps Platform · 视觉设计系统 (Design Tokens)
+ * 设计概念：指挥舱 / NOC Command Center
+ * 说明：本文件是全新视觉风格的唯一真源（Single Source of Truth）。
+ *       - 全站组件只引用 --n-* 变量，禁止硬编码色值。
+ *       - 暗色为默认主题；[data-theme="light"] 提供亮色；自定义主题色由
+ *         [data-primary-color="..."] 覆盖 --n-accent 系列（兼容现有 ThemeSwitcher）。
+ *       - 语义状态色（online/offline/alert/warning/maintenance/unknown）与
+ *         src/constants/topology.js 的 STATUS_META 保持一致，是功能语义契约。
+ * ============================================================================= */
+
+/* ============================ 暗色（默认） ============================ */
+:root,
+[data-theme="dark"] {
+  /* ---------- 品牌强调色 / Signal ---------- */
+  --n-accent: #22d3ee;            /* 主交互色：青（网络运维"信号"色） */
+  --n-accent-strong: #06b6d4;    /* hover / active 加深 */
+  --n-accent-soft: rgba(34, 211, 238, 0.12);   /* 浅底填充 */
+  --n-accent-soft-2: rgba(34, 211, 238, 0.20);
+  --n-accent-contrast: #04141a;   /* accent 之上的文字（深色） */
+  --n-glow: rgba(34, 211, 238, 0.28);          /* 光晕 */
+
+  /* ---------- 中性墨色阶（深蓝墨 navy ink） ---------- */
+  --n-bg-base: #070b16;           /* 应用最底层 */
+  --n-bg-app: #0a0f1e;           /* 页面背景 */
+  --n-bg-sidebar: #0c1322;       /* 侧边栏 */
+  --n-bg-panel: #0f1830;         /* 卡片 / 面板 */
+  --n-bg-elevated: #14203c;      /* 浮起元素（下拉、气泡） */
+  --n-bg-hover: #1b2b4d;         /* 行 / 项 hover */
+  --n-bg-active: rgba(34, 211, 238, 0.14);     /* 选中态底 */
+  --n-bg-input: #0f1830;         /* 输入框 */
+
+  /* ---------- 边框（统一透明度阶梯） ---------- */
+  --n-border: rgba(148, 163, 184, 0.14);
+  --n-border-strong: rgba(148, 163, 184, 0.24);
+  --n-border-faint: rgba(148, 163, 184, 0.08);
+  --n-border-focus: rgba(34, 211, 238, 0.45);
+
+  /* ---------- 文字 ---------- */
+  --n-text: #c7d2e1;             /* 正文 */
+  --n-text-strong: #f1f5fb;      /* 标题 / 强调 */
+  --n-text-dim: #8a99b5;         /* 次要 */
+  --n-text-faint: #5b6b89;       /* 弱化 / 占位 */
+
+  /* ---------- 语义状态色（★功能契约，勿随意改） ---------- */
+  --n-online: #34d399;       --n-online-bg: rgba(52, 211, 153, 0.14);
+  --n-offline: #f87171;      --n-offline-bg: rgba(248, 113, 113, 0.14);
+  --n-alert: #ef4444;        --n-alert-bg: rgba(239, 68, 68, 0.16);
+  --n-warning: #f59e0b;      --n-warning-bg: rgba(245, 158, 11, 0.14);
+  --n-maintenance: #f59e0b;  --n-maintenance-bg: rgba(245, 158, 11, 0.14);
+  --n-unknown: #94a3b8;      --n-unknown-bg: rgba(148, 163, 184, 0.12);
+
+  /* ---------- 连线 / 介质（拓扑） ---------- */
+  --n-link-fiber: #a855f7;       /* 光纤：紫 */
+  --n-link-copper: #64748b;      /* 铜缆：灰 */
+  --n-link-down: #ef4444;        /* 中断：红（虚线） */
+
+  /* ---------- 数据可视化分类色板（8 色，环形图 / 统计） ---------- */
+  --n-c1: #22d3ee;
+  --n-c2: #34d399;
+  --n-c3: #a855f7;
+  --n-c4: #f59e0b;
+  --n-c5: #60a5fa;
+  --n-c6: #f472b6;
+  --n-c7: #38bdf8;
+  --n-c8: #fbbf24;
+
+  /* ---------- 字体 ---------- */
+  --n-font-sans: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text",
+    "Segoe UI", "Helvetica Neue", "PingFang SC", "Hiragino Sans GB",
+    "Microsoft YaHei UI", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+  --n-font-mono: "SF Mono", "JetBrains Mono", ui-monospace, Menlo, Monaco, Consolas, monospace;
+
+  --n-fs-xs: 11px;
+  --n-fs-sm: 12px;
+  --n-fs-md: 13px;               /* 全局默认字号（密集运维 UI） */
+  --n-fs-lg: 15px;
+  --n-fs-xl: 18px;
+  --n-fs-2xl: 24px;             /* 页面主标题 */
+  --n-fs-3xl: 32px;             /* 统计数字 */
+
+  --n-lh-tight: 1.25;
+  --n-lh-base: 1.6;
+
+  --n-fw-regular: 400;
+  --n-fw-medium: 500;
+  --n-fw-semibold: 600;
+  --n-fw-bold: 700;
+
+  /* ---------- 间距标尺（4px 基准） ---------- */
+  --n-space-1: 4px;
+  --n-space-2: 8px;
+  --n-space-3: 12px;
+  --n-space-4: 16px;
+  --n-space-5: 20px;
+  --n-space-6: 24px;
+  --n-space-8: 32px;
+  --n-space-10: 40px;
+  --n-space-12: 48px;
+
+  /* ---------- 圆角 ---------- */
+  --n-r-sm: 6px;
+  --n-r-md: 10px;
+  --n-r-lg: 14px;
+  --n-r-xl: 18px;
+  --n-r-full: 999px;
+
+  /* ---------- 层级 / 阴影 ---------- */
+  --n-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --n-shadow-md: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --n-shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.55);
+  --n-shadow-glow: 0 0 0 1px var(--n-border-focus), 0 8px 30px -8px var(--n-glow);
+
+  /* ---------- 布局尺度 ---------- */
+  --n-sidebar-w: 220px;
+  --n-sidebar-w-compact: 76px;
+  --n-header-h: 40px;
+  --n-page-pad: 20px;
+  --n-page-pad-mobile: 12px;
+  --n-content-gap: 16px;
+  --n-card-pad: 20px;
+
+  /* ---------- 动效 ---------- */
+  --n-ease: cubic-bezier(0.16, 1, 0.3, 1);       /* ease-out-expo */
+  --n-ease-out: cubic-bezier(0.32, 0.72, 0, 1);
+  --n-dur-micro: 0.15s;
+  --n-dur-sm: 0.2s;
+  --n-dur-md: 0.3s;
+  --n-dur-lg: 0.4s;
+  --n-dur-page: 0.26s;
+}
+
+/* ============================ 亮色主题 ============================ */
+[data-theme="light"] {
+  --n-accent: #0891b2;
+  --n-accent-strong: #0e7490;
+  --n-accent-soft: rgba(8, 145, 178, 0.10);
+  --n-accent-soft-2: rgba(8, 145, 178, 0.16);
+  --n-accent-contrast: #ffffff;
+  --n-glow: rgba(8, 145, 178, 0.18);
+
+  --n-bg-base: #e9eef6;
+  --n-bg-app: #f3f6fb;
+  --n-bg-sidebar: #ffffff;
+  --n-bg-panel: #ffffff;
+  --n-bg-elevated: #ffffff;
+  --n-bg-hover: #eef3fb;
+  --n-bg-active: rgba(8, 145, 178, 0.10);
+  --n-bg-input: #ffffff;
+
+  --n-border: rgba(15, 23, 42, 0.12);
+  --n-border-strong: rgba(15, 23, 42, 0.20);
+  --n-border-faint: rgba(15, 23, 42, 0.06);
+  --n-border-focus: rgba(8, 145, 178, 0.50);
+
+  --n-text: #1f2a3d;
+  --n-text-strong: #0b1220;
+  --n-text-dim: #5b6b89;
+  --n-text-faint: #8a99b5;
+
+  /* 语义状态色在亮色下保持相同色相，仅底纹更浅 */
+  --n-online: #059669;      --n-online-bg: rgba(5, 150, 105, 0.10);
+  --n-offline: #dc2626;     --n-offline-bg: rgba(220, 38, 38, 0.08);
+  --n-alert: #dc2626;       --n-alert-bg: rgba(220, 38, 38, 0.10);
+  --n-warning: #d97706;     --n-warning-bg: rgba(217, 119, 6, 0.10);
+  --n-maintenance: #d97706; --n-maintenance-bg: rgba(217, 119, 6, 0.10);
+  --n-unknown: #64748b;     --n-unknown-bg: rgba(100, 116, 139, 0.10);
+
+  --n-link-fiber: #9333ea;
+  --n-link-copper: #64748b;
+  --n-link-down: #dc2626;
+
+  --n-c1: #0891b2; --n-c2: #059669; --n-c3: #9333ea; --n-c4: #d97706;
+  --n-c5: #2563eb; --n-c6: #db2777; --n-c7: #0284c7; --n-c8: #ca8a04;
+
+  --n-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+  --n-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.10);
+  --n-shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.14);
+  --n-shadow-glow: 0 0 0 1px var(--n-border-focus), 0 8px 30px -8px var(--n-glow);
+}
+
+/* ============================ 跟随系统 ============================ */
+@media (prefers-color-scheme: light) {
+  [data-theme="auto"] {
+    --n-accent: #0891b2;
+    --n-accent-strong: #0e7490;
+    --n-accent-soft: rgba(8, 145, 178, 0.10);
+    --n-accent-soft-2: rgba(8, 145, 178, 0.16);
+    --n-accent-contrast: #ffffff;
+    --n-glow: rgba(8, 145, 178, 0.18);
+
+    --n-bg-base: #e9eef6; --n-bg-app: #f3f6fb; --n-bg-sidebar: #ffffff;
+    --n-bg-panel: #ffffff; --n-bg-elevated: #ffffff; --n-bg-hover: #eef3fb;
+    --n-bg-active: rgba(8, 145, 178, 0.10); --n-bg-input: #ffffff;
+
+    --n-border: rgba(15, 23, 42, 0.12);
+    --n-border-strong: rgba(15, 23, 42, 0.20);
+    --n-border-faint: rgba(15, 23, 42, 0.06);
+    --n-border-focus: rgba(8, 145, 178, 0.50);
+
+    --n-text: #1f2a3d; --n-text-strong: #0b1220;
+    --n-text-dim: #5b6b89; --n-text-faint: #8a99b5;
+
+    --n-online: #059669; --n-online-bg: rgba(5, 150, 105, 0.10);
+    --n-offline: #dc2626; --n-offline-bg: rgba(220, 38, 38, 0.08);
+    --n-alert: #dc2626; --n-alert-bg: rgba(220, 38, 38, 0.10);
+    --n-warning: #d97706; --n-warning-bg: rgba(217, 119, 6, 0.10);
+    --n-maintenance: #d97706; --n-maintenance-bg: rgba(217, 119, 6, 0.10);
+    --n-unknown: #64748b; --n-unknown-bg: rgba(100, 116, 139, 0.10);
+
+    --n-link-fiber: #9333ea; --n-link-copper: #64748b; --n-link-down: #dc2626;
+    --n-c1: #0891b2; --n-c2: #059669; --n-c3: #9333ea; --n-c4: #d97706;
+    --n-c5: #2563eb; --n-c6: #db2777; --n-c7: #0284c7; --n-c8: #ca8a04;
+
+    --n-shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.08);
+    --n-shadow-md: 0 4px 16px rgba(15, 23, 42, 0.10);
+    --n-shadow-lg: 0 12px 40px rgba(15, 23, 42, 0.14);
+    --n-shadow-glow: 0 0 0 1px var(--n-border-focus), 0 8px 30px -8px var(--n-glow);
+  }
+}
+
+/* ============================ 自定义主题色（兼容 ThemeSwitcher） ============================
+   现有 ThemeSwitcher 通过 html[data-primary-color="..."] 设置自定义色。
+   此处把 accent 系列整体重映射，组件无需逐个改动。 */
+[data-primary-color="blue"] {
+  --n-accent: #3b82f6; --n-accent-strong: #2563eb;
+  --n-accent-soft: rgba(59, 130, 246, 0.12); --n-accent-soft-2: rgba(59, 130, 246, 0.20);
+  --n-glow: rgba(59, 130, 246, 0.28); --n-link-fiber: #818cf8;
+}
+[data-primary-color="green"] {
+  --n-accent: #22c55e; --n-accent-strong: #16a34a;
+  --n-accent-soft: rgba(34, 197, 94, 0.12); --n-accent-soft-2: rgba(34, 197, 94, 0.20);
+  --n-glow: rgba(34, 197, 94, 0.28); --n-link-fiber: #34d399;
+}
+[data-primary-color="purple"] {
+  --n-accent: #c586c0; --n-accent-strong: #a855f7;
+  --n-accent-soft: rgba(168, 85, 247, 0.14); --n-accent-soft-2: rgba(168, 85, 247, 0.22);
+  --n-glow: rgba(168, 85, 247, 0.30); --n-link-fiber: #c586c0;
+}
+[data-primary-color="orange"] {
+  --n-accent: #fb923c; --n-accent-strong: #ea580c;
+  --n-accent-soft: rgba(251, 146, 60, 0.12); --n-accent-soft-2: rgba(251, 146, 60, 0.20);
+  --n-glow: rgba(251, 146, 60, 0.28); --n-link-fiber: #f59e0b;
+}
+[data-primary-color="red"] {
+  --n-accent: #f87171; --n-accent-strong: #ef4444;
+  --n-accent-soft: rgba(248, 113, 113, 0.12); --n-accent-soft-2: rgba(248, 113, 113, 0.20);
+  --n-glow: rgba(248, 113, 113, 0.28); --n-link-fiber: #f472b6;
+}
+
+/* ============================ 全局基线 ============================ */
+* { box-sizing: border-box; }
+
+html, body, #app {
+  margin: 0;
+  font-family: var(--n-font-sans);
+  font-size: var(--n-fs-md);
+  line-height: var(--n-lh-base);
+  color: var(--n-text);
+  background: var(--n-bg-app);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 数字等宽：IP / MAC / 端口 / 统计 */
+.n-num,
+.el-table .cell,
+.stat-value,
+.el-statistic__content {
+  font-variant-numeric: tabular-nums;
+}
+.mono { font-family: var(--n-font-mono); }
+
+/* 焦点可见性（无障碍） */
+:focus-visible {
+  outline: 2px solid var(--n-border-focus);
+  outline-offset: 2px;
+}
+
+/* 尊重减少动效偏好 */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+  }
+}

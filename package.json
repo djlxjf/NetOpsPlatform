@@ -1,0 +1,253 @@
+{
+  "name": "netops-platform",
+  "private": true,
+  "version": "1.6.3",
+  "description": "轻量化网络运维管理平台",
+  "author": "NetOps Platform",
+  "main": "electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs --fix --ignore-path .gitignore",
+    "type-check": "vue-tsc --noEmit",
+    "test:unit": "vitest run",
+    "test:e2e": "playwright test",
+    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:5173 && cross-env VITE_DEV_SERVER_URL=http://localhost:5173 electron .\"",
+    "electron:build": "vite build && electron-builder",
+    "electron:build:win": "vite build && electron-builder --win",
+    "electron:build:mac": "vite build && electron-builder --mac",
+    "electron:build:linux": "vite build && electron-builder --linux",
+    "electron:build:all": "vite build && electron-builder --win --mac --linux",
+    "release": "npm run electron:build:all && npm run release:publish",
+    "release:publish": "node scripts/publish-release.js",
+    "version:patch": "npm version patch && git push --follow-tags",
+    "version:minor": "npm version minor && git push --follow-tags",
+    "version:major": "npm version major && git push --follow-tags",
+    "analyze": "vite build --mode analyze",
+    "postinstall": "electron-builder install-app-deps",
+    "prepare": "husky"
+  },
+  "build": {
+    "appId": "com.netops.platform",
+    "productName": "NetOpsPlatform",
+    "directories": {
+      "output": "release",
+      "buildResources": "build"
+    },
+    "files": [
+      "package.json",
+      "dist/**/*",
+      "electron/**/*",
+      "public/**/*",
+      "!**/*.map",
+      "!**/tests/**/*"
+    ],
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/electron/**/*",
+      "electron/LICENSE.dll",
+      "electron/LICENSE.exe",
+      "electron/LICENSE.exe",
+      "dist/**/*",
+      "**/*.node",
+      "node_modules/better-sqlite3/**"
+    ],
+    "npmRebuild": false,
+    "compression": "maximum",
+    "removePackageScripts": true,
+    "nodeGypRebuild": false,
+    "publish": null,
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/logo.ico",
+      "artifactName": "${productName}-Setup-v${version}-win-${arch}.${ext}",
+      "signAndEditExecutable": false
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "public/logo.ico",
+      "uninstallerIcon": "public/logo.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "NetOps Platform",
+      "runAfterFinish": true
+    },
+    "mac": {
+      "target": [
+        {
+          "target": "dmg",
+          "arch": [
+            "x64",
+            "arm64"
+          ]
+        }
+      ],
+      "icon": "public/logo.icns",
+      "artifactName": "${productName}-v${version}-mac-${arch}.${ext}",
+      "category": "public.app-category.developer-tools",
+      "hardenedRuntime": false,
+      "gatekeeperAssess": false
+    },
+    "dmg": {
+      "title": "${productName}-v${version}",
+      "icon": "public/logo.icns",
+      "background": "build/dmg-background.png",
+      "window": {
+        "width": 540,
+        "height": 380
+      }
+    },
+    "linux": {
+      "target": [
+        {
+          "target": "AppImage",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "deb",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "public/logo.png",
+      "artifactName": "${productName}-v${version}-linux-${arch}.${ext}",
+      "category": "Development"
+    },
+    "appImage": {
+      "artifactName": "${productName}-v${version}-linux-${arch}.AppImage"
+    },
+    "deb": {
+      "artifactName": "${productName}-v${version}-linux-${arch}.deb"
+    },
+    "afterPack": "electron/after-pack.js",
+    "extraResources": [
+      {
+        "from": "data",
+        "to": "resources/data"
+      }
+    ]
+  },
+  "dependencies": {
+    "@antv/x6": "^2.19.2",
+    "@antv/x6-plugin-dnd": "^2.1.1",
+    "@antv/x6-plugin-history": "^2.2.4",
+    "@antv/x6-plugin-keyboard": "^2.2.3",
+    "@antv/x6-plugin-minimap": "^2.0.7",
+    "@antv/x6-plugin-scroller": "^2.0.10",
+    "@antv/x6-plugin-selection": "^2.2.2",
+    "@antv/x6-plugin-snapline": "^2.1.7",
+    "@antv/x6-plugin-transform": "^2.1.8",
+    "@antv/x6-vue-shape": "^2.1.2",
+    "@capacitor/android": "^8.3.4",
+    "@capacitor/app": "^8.1.0",
+    "@capacitor/browser": "^8.0.3",
+    "@capacitor/core": "^8.3.4",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/preferences": "^8.0.1",
+    "@element-plus/icons-vue": "^2.3.2",
+    "@gltf-transform/cli": "^4.5.1",
+    "@sentry/electron": "^7.14.0",
+    "@sentry/vue": "^10.62.0",
+    "@vue-flow/background": "^1.3.2",
+    "@vue-flow/controls": "^1.1.3",
+    "@vue-flow/core": "^1.48.2",
+    "@vue-flow/minimap": "^1.5.4",
+    "acorn": "^8.16.0",
+    "axios": "^1.18.1",
+    "better-sqlite3": "^12.11.1",
+    "dayjs": "^1.11.20",
+    "diff": "^9.0.0",
+    "dompurify": "^3.4.13",
+    "echarts": "^6.0.0",
+    "element-plus": "^2.14.0",
+    "esbuild": "^0.28.1",
+    "file-saver": "^2.0.5",
+    "markdown-it": "^14.2.0",
+    "mousetrap": "^1.6.5",
+    "net-snmp": "^3.26.3",
+    "nodemailer": "^9.0.1",
+    "pinia": "^3.0.4",
+    "playwright": "^1.62.1",
+    "ssh2": "^1.17.0",
+    "ssh2-sftp-client": "^12.1.1",
+    "three": "^0.186.1",
+    "vue": "^3.5.34",
+    "vue-echarts": "^8.0.1",
+    "vue-router": "^4.6.4",
+    "xlsx": "^0.20.3",
+    "xterm": "^5.3.0",
+    "xterm-addon-fit": "^0.8.0",
+    "xterm-addon-search": "^0.13.0",
+    "xterm-addon-web-links": "^0.9.0",
+    "zmodem.js": "^0.1.10"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.4",
+    "@electron/asar": "^4.2.0",
+    "@vitejs/plugin-vue": "^6.0.6",
+    "concurrently": "^9.2.1",
+    "cross-env": "^7.0.3",
+    "cssnano": "^8.0.2",
+    "electron": "^33.4.0",
+    "electron-builder": "^26.8.1",
+    "electron-updater": "^6.3.0",
+    "eslint": "^9.0.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.6",
+    "eslint-plugin-vue": "^10.0.0",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.0.0",
+    "prettier": "^3.0.0",
+    "rcedit": "^5.0.2",
+    "rollup-plugin-visualizer": "^7.0.1",
+    "sass": "^1.99.0",
+    "unplugin-auto-import": "^21.0.0",
+    "unplugin-vue-components": "^32.1.0",
+    "vite": "^8.0.12",
+    "vitest": "^2.0.0",
+    "vue-tsc": "^2.0.0",
+    "wait-on": "^8.0.5"
+  },
+  "lint-staged": {
+    "*.{js,jsx,mjs,cjs,vue}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{ts,tsx,mts,cts}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=10.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-github-username/netops-platform.git"
+  },
+  "keywords": [
+    "netops",
+    "network",
+    "monitoring",
+    "electron",
+    "vue"
+  ],
+  "license": "MIT"
+}

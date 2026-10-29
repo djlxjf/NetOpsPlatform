@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <title>NetOps 内置浏览器</title>
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Microsoft YaHei', sans-serif;
+      background: #0d1117;
+      color: #c9d1d9;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    /* 自定义标题栏 */
+    .titlebar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 32px;
+      background: #0d1117;
+      border-bottom: 1px solid #30363d;
+      flex-shrink: 0;
+      -webkit-app-region: drag;
+      user-select: none;
+    }
+    .titlebar-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-left: 12px;
+      flex: 1;
+      min-width: 0;
+    }
+    .titlebar-icon {
+      width: 16px;
+      height: 16px;
+      flex-shrink: 0;
+    }
+    .titlebar-text {
+      font-size: 12px;
+      color: #c9d1d9;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .titlebar-controls {
+      display: flex;
+      align-items: center;
+      -webkit-app-region: no-drag;
+    }
+    .titlebar-btn {
+      width: 46px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: transparent;
+      border: none;
+      color: #c9d1d9;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .titlebar-btn:hover {
+      background: #21262d;
+    }
+    .titlebar-btn.close:hover {
+      background: #f85149;
+      color: #fff;
+    }
+    .toolbar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      background: #161b22;
+      border-bottom: 1px solid #30363d;
+      height: 48px;
+      flex-shrink: 0;
+    }
+    .toolbar-btn {
+      background: #21262d;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 5px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.15s;
+      white-space: nowrap;
+    }
+    .toolbar-btn:hover {
+      background: #30363d;
+      border-color: #8b949e;
+    }
+    .toolbar-btn:active {
+      background: #484f58;
+    }
+    .url-bar-wrapper {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+    }
+    .url-bar {
+      flex: 1;
+      background: #0d1117;
+      border: 1px solid #30363d;
+      color: #c9d1d9;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.15s;
+      min-width: 0;
+    }
+    .url-bar:focus {
+      border-color: #58a6ff;
+    }
+    .url-bar::placeholder {
+      color: #484f58;
+    }
+    .status-text {
+      font-size: 11px;
+      color: #8b949e;
+      white-space: nowrap;
+      min-width: 60px;
+      text-align: right;
+    }
+    .status-text.loading { color: #58a6ff; }
+    .status-text.error { color: #f85149; }
+    .status-text.success { color: #3fb950; }
+    .webview-container {
+      flex: 1;
+      min-height: 0;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: #0d1117;
+    }
+    webview {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      border: none;
+      background: #0d1117;
+    }
+    .error-overlay {
+      display: none;
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      z-index: 100;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      background: #0d1117;
+      padding: 40px;
+      text-align: center;
+    }
+    .error-overlay.active { display: flex; }
+    .error-icon { font-size: 48px; margin-bottom: 20px; }
+    .error-title { font-size: 18px; font-weight: bold; margin-bottom: 12px; }
+    .error-desc { font-size: 14px; color: #8b949e; margin-bottom: 8px; }
+    .error-url { font-size: 13px; color: #58a6ff; margin-bottom: 24px; word-break: break-all; }
+    .error-hint { font-size: 12px; color: #8b949e; text-align: left; line-height: 2; max-width: 480px; }
+  </style>
+</head>
+<body>
+  <div class="titlebar">
+    <div class="titlebar-left">
+      <svg class="titlebar-icon" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"/>
+        <line x1="2" y1="12" x2="22" y2="12"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+      </svg>
+      <span class="titlebar-text" id="titlebarText">NetOps 内置浏览器</span>
+    </div>
+    <div class="titlebar-controls">
+      <button class="titlebar-btn" onclick="minimizeWindow()" title="最小化">
+        <svg width="10" height="10" viewBox="0 0 10 10" style="pointer-events:none"><rect y="4" width="10" height="1" fill="currentColor"/></svg>
+      </button>
+      <button class="titlebar-btn" onclick="maximizeWindow()" title="最大化">
+        <svg width="10" height="10" viewBox="0 0 10 10" style="pointer-events:none"><rect x="0.5" y="0.5" width="9" height="9" fill="none" stroke="currentColor"/><rect x="0.5" y="0.5" width="9" height="2" fill="currentColor"/></svg>
+      </button>
+      <button class="titlebar-btn close" onclick="closeWindow()" title="关闭">
+        <svg width="10" height="10" viewBox="0 0 10 10" style="pointer-events:none"><path d="M1 1 L9 9 M9 1 L1 9" stroke="currentColor" stroke-width="1.2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <div class="toolbar">
+    <button class="toolbar-btn" onclick="goBack()">← 后退</button>
+    <button class="toolbar-btn" onclick="goForward()">前进 →</button>
+    <button class="toolbar-btn" onclick="reload()">刷新</button>
+    <div class="url-bar-wrapper">
+      <input type="text" class="url-bar" id="urlbar" placeholder="输入网址，按回车跳转..." onkeydown="if(event.key==='Enter') navigate()">
+    </div>
+    <button class="toolbar-btn" onclick="navigate()">跳转</button>
+    <span class="status-text" id="status">就绪</span>
+  </div>
+
+  <div class="webview-container">
+    <!-- 整改（安全 F-08）：移除 disablewebsecurity。
+         原属性会连带关掉 webview 内页面的同源策略，等于让「被加载的设备页面」
+         （含 LAN 上任何被攻破或仿冒的设备）获得跨源读取能力。
+         本 webview 的 preload 仅修正视口高度（见 webview-preload.js），
+         不依赖跨源访问，故移除不影响功能；同时显式关闭 node 集成。 -->
+    <webview id="webview" src="about:blank" allowpopups nodeintegration=no webpreferences="contextIsolation=yes" preload="webview-preload.js"></webview>
+  </div>
+
+  <div class="error-overlay" id="errorOverlay">
+    <div class="error-icon">⚠️</div>
+    <div class="error-title" id="errorTitle">页面加载失败</div>
+    <div class="error-desc" id="errorDesc">无法连接到设备</div>
+    <div class="error-url" id="errorUrl"></div>
+    <div class="error-hint">
+      • 设备未开启Web服务，或Web服务在非标端口<br>
+      • 设备需要特定浏览器（如IE兼容模式/ActiveX控件）<br>
+      • 网络连接被防火墙阻止<br>
+      • 设备Web页面使用了自签名证书（已自动忽略）<br>
+      • 部分旧版摄像头/NVR页面在内置浏览器中可能显示不全<br>
+      • 部分摄像头需在浏览器中手动输入 http://IP 访问
+    </div>
+  </div>
+
+  <script>
+    const params = new URLSearchParams(window.location.search);
+    let initialUrl = params.get('url') || 'about:blank';
+    const webview = document.getElementById('webview');
+    const urlbar = document.getElementById('urlbar');
+    const statusEl = document.getElementById('status');
+    const errorOverlay = document.getElementById('errorOverlay');
+    const errorDesc = document.getElementById('errorDesc');
+    const errorUrl = document.getElementById('errorUrl');
+
+    let currentUrl = initialUrl;
+
+    // ===== Flex 布局已自动处理 webview 尺寸，保留 ResizeObserver 作为保险 =====
+    (function() {
+      const container = document.querySelector('.webview-container');
+      if (container && typeof ResizeObserver !== 'undefined') {
+        const ro = new ResizeObserver(function(entries) {
+          for (const entry of entries) {
+            const cr = entry.contentRect;
+            try {
+              if (webview && webview.getWebContents) {
+                const wc = webview.getWebContents();
+                if (wc && wc.setSize) wc.setSize({ width: Math.round(cr.width), height: Math.round(cr.height) });
+              }
+            } catch(e) {}
+          }
+        });
+        ro.observe(container);
+      }
+    })();
+    // =====================================================================
+
+    // ===== 注入 JS 修正 webview 内部视口高度（双重保险） =====
+    function fixWebviewViewport() {
+      const container = document.querySelector('.webview-container');
+      if (!container || !webview) return;
+      const height = container.clientHeight;
+      const width = container.clientWidth;
+
+      const code = `
+        (function() {
+          if (window.__netopsViewportFixed) return;
+          window.__netopsViewportFixed = true;
+          try {
+            Object.defineProperty(window, 'innerHeight', {
+              get: function() { return ${height}; },
+              configurable: true
+            });
+            Object.defineProperty(window, 'outerHeight', {
+              get: function() { return ${height}; },
+              configurable: true
+            });
+            Object.defineProperty(window, 'innerWidth', {
+              get: function() { return ${width}; },
+              configurable: true
+            });
+            Object.defineProperty(window, 'outerWidth', {
+              get: function() { return ${width}; },
+              configurable: true
+            });
+            Object.defineProperty(document.documentElement, 'clientHeight', {
+              get: function() { return ${height}; },
+              configurable: true
+            });
+            Object.defineProperty(document.documentElement, 'clientWidth', {
+              get: function() { return ${width}; },
+              configurable: true
+            });
+          } catch(e) {}
+          var style = document.createElement('style');
+          style.textContent = 'html, body { height: 100% !important; min-height: 100% !important; overflow: auto !important; }';
+          var target = document.head || document.documentElement;
+          if (target) target.appendChild(style);
+          window.dispatchEvent(new Event('resize'));
+          if (window.jQuery) jQuery(window).trigger('resize');
+          if (window.$) $(window).trigger('resize');
+        })();
+      `;
+
+      try {
+        webview.executeJavaScript(code);
+      } catch(e) {}
+    }
+
+    webview.addEventListener('dom-ready', fixWebviewViewport);
+    webview.addEventListener('did-stop-loading', fixWebviewViewport);
+    setTimeout(fixWebviewViewport, 300);
+    setTimeout(fixWebviewViewport, 1000);
+    setTimeout(fixWebviewViewport, 2500);
+    // =========================================================
+
+    function setUrl(url) {
+      currentUrl = url;
+      urlbar.value = url;
+    }
+
+    function setStatus(text, type) {
+      statusEl.textContent = text;
+      statusEl.className = 'status-text' + (type ? ' ' + type : '');
+    }
+
+    function showError(desc, url) {
+      webview.style.display = 'none';
+      errorOverlay.classList.add('active');
+      errorDesc.textContent = desc || '无法连接到设备';
+      errorUrl.textContent = url || '';
+      setStatus('加载失败', 'error');
+    }
+
+    function hideError() {
+      webview.style.display = '';
+      errorOverlay.classList.remove('active');
+    }
+
+    function loadInitialUrl(url) {
+      setUrl(url);
+      if (url !== 'about:blank') {
+        setStatus('正在加载...', 'loading');
+        webview.src = url;
+      }
+    }
+
+    // 初始加载
+    if (initialUrl !== 'about:blank') {
+      loadInitialUrl(initialUrl);
+    } else if (window.browserWindow) {
+      const preloadUrl = window.browserWindow.getInitialUrl && window.browserWindow.getInitialUrl();
+      if (preloadUrl && preloadUrl !== 'about:blank') {
+        loadInitialUrl(preloadUrl);
+      } else {
+        window.browserWindow.onInitialUrl && window.browserWindow.onInitialUrl(function(url) {
+          if (url && url !== 'about:blank' && currentUrl === 'about:blank') {
+            loadInitialUrl(url);
+          }
+        });
+      }
+    }
+
+    webview.addEventListener('did-start-loading', () => {
+      hideError();
+      setStatus('正在加载...', 'loading');
+    });
+
+    webview.addEventListener('did-stop-loading', () => {
+      setStatus('完成', 'success');
+      setTimeout(() => setStatus('就绪'), 1500);
+    });
+
+    webview.addEventListener('did-navigate', (e) => {
+      setUrl(e.url);
+    });
+
+    webview.addEventListener('did-navigate-in-page', (e) => {
+      setUrl(e.url);
+    });
+
+    webview.addEventListener('did-fail-load', (e) => {
+      if (e.errorCode !== -3 && e.isMainFrame) {
+        showError(e.errorDescription || '无法连接到设备', e.validatedURL || currentUrl);
+      }
+    });
+
+    webview.addEventListener('page-title-updated', (e) => {
+      document.title = (e.title || 'NetOps 内置浏览器');
+      const titlebarText = document.getElementById('titlebarText');
+      if (titlebarText) titlebarText.textContent = document.title;
+    });
+
+    function navigate() {
+      let url = urlbar.value.trim();
+      if (!url) return;
+      if (url === 'about:blank') {
+        webview.src = 'about:blank';
+        setUrl('about:blank');
+        return;
+      }
+      if (!url.match(/^https?:\/\//i) && !url.match(/^file:\/\//i)) {
+        url = 'http://' + url;
+      }
+      hideError();
+      webview.src = url;
+      setStatus('正在加载...', 'loading');
+    }
+
+    function goBack() {
+      if (webview.canGoBack()) {
+        webview.goBack();
+      }
+    }
+
+    function goForward() {
+      if (webview.canGoForward()) {
+        webview.goForward();
+      }
+    }
+
+    function reload() {
+      hideError();
+      webview.reload();
+      setStatus('正在加载...', 'loading');
+    }
+
+    // 窗口控制
+    function minimizeWindow() {
+      try {
+        if (window.browserWindow) window.browserWindow.minimize();
+      } catch (e) {}
+    }
+    function maximizeWindow() {
+      try {
+        if (window.browserWindow) window.browserWindow.maximize();
+      } catch (e) {}
+    }
+    function closeWindow() {
+      try {
+        if (window.browserWindow && window.browserWindow.close) {
+          window.browserWindow.close();
+          return;
+        }
+      } catch (e) {}
+      try {
+        window.close();
+      } catch (e) {}
+      try {
+        if (window.electronAPI && window.electronAPI.close) {
+          window.electronAPI.close();
+        }
+      } catch (e) {}
+    }
+
+    // 监听键盘快捷键
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === 'l') {
+          e.preventDefault();
+          urlbar.focus();
+          urlbar.select();
+        }
+        if (e.key === 'r') {
+          e.preventDefault();
+          reload();
+        }
+      }
+    });
+  </script>
+</body>
+</html>
